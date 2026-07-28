@@ -1,0 +1,238 @@
+<title>Data Forest (3D) — Technical Documentation</title>
+<style>
+  :root{
+    --bg:#eef3f4; --surface:#ffffff; --surface-2:#f5f9fa;
+    --ink:#0d1a1e; --ink-soft:#48595e; --ink-faint:#7b8f94;
+    --line:#d3dfe1; --line-soft:#e6eeef;
+    --accent:#0a7c8b; --accent-strong:#075e6a; --accent-bright:#12aec0;
+    --good:#1c8f63; --warn:#a4741a; --crit:#c1443e;
+    --shadow:0 1px 2px rgba(10,40,45,.05),0 10px 26px rgba(10,40,45,.05);
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Code","SF Mono",Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#071418; --surface:#0d1f25; --surface-2:#0a1a20;
+    --ink:#dcebed; --ink-soft:#93aab0; --ink-faint:#5e787f;
+    --line:#1d343c; --line-soft:#132831;
+    --accent:#4fd8e0; --accent-strong:#7ff0f5; --accent-bright:#6ff0f5;
+    --good:#3fcf90; --warn:#e0b25c; --crit:#f0736d;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.36);
+  }}
+  :root[data-theme="light"]{
+    --bg:#eef3f4; --surface:#ffffff; --surface-2:#f5f9fa; --ink:#0d1a1e; --ink-soft:#48595e; --ink-faint:#7b8f94;
+    --line:#d3dfe1; --line-soft:#e6eeef; --accent:#0a7c8b; --accent-strong:#075e6a; --accent-bright:#12aec0;
+    --good:#1c8f63; --warn:#a4741a; --crit:#c1443e; --shadow:0 1px 2px rgba(10,40,45,.05),0 10px 26px rgba(10,40,45,.05);
+  }
+  :root[data-theme="dark"]{
+    --bg:#071418; --surface:#0d1f25; --surface-2:#0a1a20; --ink:#dcebed; --ink-soft:#93aab0; --ink-faint:#5e787f;
+    --line:#1d343c; --line-soft:#132831; --accent:#4fd8e0; --accent-strong:#7ff0f5; --accent-bright:#6ff0f5;
+    --good:#3fcf90; --warn:#e0b25c; --crit:#f0736d; --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.36);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;font-size:16px}
+  .wrap{max-width:1080px;margin:0 auto;padding:clamp(20px,5vw,64px) clamp(18px,4vw,40px)}
+  .doc-head{border-bottom:1px solid var(--line);padding-bottom:28px;margin-bottom:40px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
+  h1{font-size:clamp(28px,5vw,44px);line-height:1.08;letter-spacing:-.02em;margin:.5em 0 .35em;text-wrap:balance;font-weight:700}
+  .lede{font-size:clamp(16px,2.2vw,19px);color:var(--ink-soft);max-width:64ch;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 10px;margin-top:22px}
+  .tag{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;color:var(--ink-soft);background:var(--surface-2)}
+  .tag b{color:var(--ink);font-weight:600}
+  .tag.ok{border-color:color-mix(in srgb,var(--good) 45%,var(--line));color:var(--good)}
+  .body-grid{display:grid;grid-template-columns:1fr;gap:0}
+  @media (min-width:960px){.body-grid{grid-template-columns:210px 1fr;gap:48px;align-items:start}}
+  nav.toc{display:none}
+  @media (min-width:960px){
+    nav.toc{display:block;position:sticky;top:32px;font-size:13.5px}
+    nav.toc .toc-label{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px}
+    nav.toc a{display:block;color:var(--ink-soft);text-decoration:none;padding:5px 0 5px 14px;border-left:2px solid var(--line-soft);transition:.15s}
+    nav.toc a:hover{color:var(--accent);border-color:var(--accent)}
+    nav.toc a .n{font-family:var(--mono);color:var(--ink-faint);margin-right:8px;font-size:12px}
+  }
+  section{margin-bottom:44px;scroll-margin-top:24px}
+  h2{font-size:22px;letter-spacing:-.01em;margin:0 0 4px;display:flex;align-items:baseline;gap:12px;padding-top:20px;border-top:1px solid var(--line-soft)}
+  h2 .n{font-family:var(--mono);font-size:14px;color:var(--accent);font-weight:600}
+  h3{font-size:16px;margin:26px 0 8px;color:var(--ink);letter-spacing:-.005em}
+  p{margin:0 0 14px;max-width:70ch}
+  ul{margin:0 0 14px;padding-left:20px;max-width:70ch} li{margin:6px 0}
+  code{font-family:var(--mono);font-size:.88em;background:var(--surface-2);border:1px solid var(--line-soft);padding:1px 6px;border-radius:5px;color:var(--accent-strong)}
+  strong{font-weight:650} a{color:var(--accent)}
+  .note{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:14px 18px;margin:18px 0;box-shadow:var(--shadow)}
+  .note .k{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:5px}
+  .note p{margin:0}
+  pre{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow-x:auto;margin:16px 0;box-shadow:var(--shadow)}
+  pre code{background:none;border:none;padding:0;color:var(--ink-soft);font-size:13px;line-height:1.7}
+  .tbl-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--surface)}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  thead th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);background:var(--surface-2);border-bottom:1px solid var(--line)}
+  tbody tr:last-child td{border-bottom:none}
+  td code{white-space:nowrap}
+  .num{font-variant-numeric:tabular-nums;font-family:var(--mono)}
+  .win{color:var(--good);font-weight:600;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+  .pipe{display:flex;flex-direction:column;gap:0;margin:20px 0;max-width:640px}
+  .stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+  .stage .st-h{display:flex;align-items:center;gap:9px;font-weight:650;font-size:15px}
+  .stage .st-h .badge{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);border:1px solid var(--line);border-radius:6px;padding:2px 7px;background:var(--surface-2)}
+  .stage ul{margin:9px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-soft)} .stage ul li{margin:3px 0}
+  .arrow{align-self:center;color:var(--accent);height:26px;display:flex;align-items:center;font-size:13px}
+  .arrow .lbl{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-left:8px}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  .foot{margin-top:20px;padding-top:22px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:13px;font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+  <header class="doc-head">
+    <div class="eyebrow">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"></circle>
+        <circle cx="12" cy="12" r="2.4" fill="currentColor"></circle>
+        <path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+      </svg>
+      Technical Documentation · Phase 3
+    </div>
+    <h1>Data Forest — Gaze-Controlled 3D Game</h1>
+    <p class="lede">A low-poly 3D forest, built in Three.js from the <em>kennye'sMiniforest</em> GLB pack, where the player collects floating data-source orbs using only their gaze. It reuses the Phase 2 gaze engine unchanged and adds a 3D rendering, selection, and game layer on top.</p>
+    <div class="meta">
+      <span class="tag ok">Status: <b>Complete &amp; playable</b></span>
+      <span class="tag">Updated <b>2026-07-26</b></span>
+      <span class="tag">Stack <b>Three.js r160 · WebGL · WebSocket</b></span>
+    </div>
+  </header>
+
+  <div class="body-grid">
+    <nav class="toc" aria-label="Contents">
+      <div class="toc-label">Contents</div>
+      <a href="#overview"><span class="n">1</span>Overview</a>
+      <a href="#arch"><span class="n">2</span>Architecture</a>
+      <a href="#scene"><span class="n">3</span>The 3D scene</a>
+      <a href="#gaze3d"><span class="n">4</span>Gaze in 3D</a>
+      <a href="#game"><span class="n">5</span>The game layer</a>
+      <a href="#juice"><span class="n">6</span>Juice</a>
+      <a href="#serving"><span class="n">7</span>Serving</a>
+      <a href="#perf"><span class="n">8</span>Performance</a>
+      <a href="#files"><span class="n">9</span>Files</a>
+    </nav>
+
+    <main>
+      <section id="overview">
+        <h2><span class="n">1</span> Overview</h2>
+        <p>Phase 3 takes the working gaze system from Phase 2 and gives it a 3D world. The player looks around a low-poly forest and collects <strong>eight glowing "data-source" orbs</strong> — the flood dataset — by resting their gaze on each and holding (dwell). A rigged archer reacts to every pickup; completing the set trains the model and offers a replay, all selected by gaze.</p>
+        <div class="note">
+          <span class="k">Reuse, not rebuild</span>
+          <p>The gaze pipeline (webcam → MediaPipe → L2CS gaze model → calibration → 1€ filter → WebSocket) is <strong>identical to Phase 2</strong>. Calibration is device-and-user specific, not app-specific, so the same <code>calibration_model.pkl</code> drives both the 2D and 3D games. Phase 3 is purely a new front-end that consumes the same <code>ws://localhost:8765</code> stream.</p>
+        </div>
+      </section>
+
+      <section id="arch">
+        <h2><span class="n">2</span> Architecture</h2>
+        <div class="pipe">
+          <div class="stage">
+            <div class="st-h"><span class="badge">Reused</span> Phase 2 gaze server (gaze_server.py)</div>
+            <ul><li>Webcam → gaze model (GPU/DirectML) → normalized (x, y) → 1€ filter</li><li>Broadcasts over <code>ws://localhost:8765</code></li></ul>
+          </div>
+          <div class="arrow">↓<span class="lbl">{"x","y"} JSON</span></div>
+          <div class="stage">
+            <div class="st-h"><span class="badge">New</span> forest.js — Three.js app</div>
+            <ul>
+              <li>Renders the forest + orbs (WebGL)</li>
+              <li>Maps gaze → a ray into the 3D scene + screen-space aim-assist</li>
+              <li>Dwell → collect orb; win → train → replay (all gaze-driven)</li>
+            </ul>
+          </div>
+          <div class="arrow">↓<span class="lbl">served over HTTP (ES modules)</span></div>
+          <div class="stage">
+            <div class="st-h"><span class="badge">Serve</span> python -m http.server 8000</div>
+          </div>
+        </div>
+        <p>Two local processes run together: the <strong>gaze server</strong> (port 8765) and a <strong>static file server</strong> (port 8000) that serves the game. The browser loads the game from <code>http://localhost:8000/forest.html</code> and opens a WebSocket to the gaze server.</p>
+      </section>
+
+      <section id="scene">
+        <h2><span class="n">3</span> The 3D scene</h2>
+        <h3>3.1 · Asset pipeline</h3>
+        <ul>
+          <li><strong>Three.js is vendored locally</strong> (<code>vendor/three/</code>, plus <code>GLTFLoader</code>, <code>OrbitControls</code>, and its <code>BufferGeometryUtils</code> dependency) so the game runs without a CDN. Bare <code>import "three"</code> resolves via an <strong>import map</strong> in the HTML.</li>
+          <li>The 22 GLB models are copied to <code>models/</code> with clean names. They reference their texture <strong>externally</strong> as <code>Textures/colormap.png</code>, so that shared atlas is copied alongside them.</li>
+          <li>A <code>LoadingManager</code> drives the progress bar and reveals the scene when every asset is ready.</li>
+        </ul>
+        <h3>3.2 · Composition</h3>
+        <p>A hemisphere + shadow-casting directional "sun" light the scene; sky-blue background with distance fog. A ring of trees, scattered rocks and plants, and a camp (tent, cabin, bridge) form the backdrop. The <strong>archer</strong> stands centre-stage. All scenery is <em>decorative</em> — only the data orbs are interactive.</p>
+      </section>
+
+      <section id="gaze3d">
+        <h2><span class="n">4</span> Gaze in 3D</h2>
+        <p>Turning a 2D gaze point into a 3D selection is the core technique of this phase.</p>
+        <ul>
+          <li><strong>Raycast.</strong> The gaze <code>(x, y)</code> is converted to normalized device coordinates and a ray is cast from the camera into the scene (<code>THREE.Raycaster</code>). A direct hit on an orb is a precise selection.</li>
+          <li><strong>Screen-space aim-assist.</strong> A raw ray against small meshes is unforgiving, so if the ray misses, each orb's world centre is <em>projected to screen pixels</em> and the nearest one within <code>ASSIST_RADIUS</code> (120px) is selected instead. This is the 3D equivalent of the Phase 2 hover-pad, and it is what makes selection feel good.</li>
+          <li><strong>Cursor magnet + stickiness.</strong> The on-screen cursor is pulled toward the locked orb, and the current target keeps a distance bonus (hysteresis) so it does not flicker between neighbours.</li>
+          <li><strong>Guided recenter.</strong> Pressing <code>c</code> shows a "LOOK HERE" target at screen centre and captures the per-session offset after ~1.3s — removing the guesswork that made a blind recenter unreliable.</li>
+        </ul>
+        <div class="note">
+          <span class="k">Key lesson</span>
+          <p>3D gaze selection needs <strong>aim-assist and fullscreen + recenter</strong> for exactly the same reasons the 2D game did. Only orbs are made selectable (not the ~48 scenery props), so the assist has few, well-spaced targets and nothing to confuse.</p>
+        </div>
+      </section>
+
+      <section id="game">
+        <h2><span class="n">5</span> The game layer</h2>
+        <ul>
+          <li><strong>Data orbs.</strong> Eight emissive icosahedra (each a flood data source, e.g. <em>Rainfall Gauge</em>, <em>River Level</em>) float and bob around the archer, each with a screen-projected HTML label and its own point light.</li>
+          <li><strong>Collect.</strong> Dwelling on an orb marks it collected: it spins, floats up, and shrinks out; the archer turns to face it and plays its <code>pick-up</code> clip (one of 32 animations, crossfaded back to idle).</li>
+          <li><strong>Win → Train → Replay.</strong> Collecting all eight shows a win screen. Its <strong>"Train the Model"</strong> and <strong>"Play Again"</strong> buttons are themselves gaze-selectable (2D dwell-to-click), so the loop never needs the mouse. "Train" reports the model accuracy; "Play Again" respawns the orbs.</li>
+        </ul>
+      </section>
+
+      <section id="juice">
+        <h2><span class="n">6</span> Juice</h2>
+        <ul>
+          <li><strong>Particles.</strong> Each collect spawns a burst of ~18 small emissive shards in the orb's colour, integrated with gravity and faded out over ~0.8s.</li>
+          <li><strong>Sound.</strong> All audio is <strong>synthesized with the Web Audio API</strong> — a pitch-dropping "pop" per collect and an ascending win chime — so there are no audio files to host and nothing is blocked by content security. The audio context is started on the first key-press (browser autoplay rule).</li>
+        </ul>
+      </section>
+
+      <section id="serving">
+        <h2><span class="n">7</span> Serving</h2>
+        <p>The game uses ES modules (<code>import</code>), which browsers refuse to load over <code>file://</code>. It must therefore be served over HTTP — a one-line static server is enough:</p>
+        <pre><code>cd "C:\game integration\game\workingGameTemplate"
+python -m http.server 8000
+# then open http://localhost:8000/forest.html</code></pre>
+        <p>The gaze server (<code>gaze_server.py</code>) runs alongside it, exactly as in Phase 2.</p>
+      </section>
+
+      <section id="perf">
+        <h2><span class="n">8</span> Performance</h2>
+        <p>The asset pack is extraordinarily light, so the scene is trivial for the GPU.</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+            <tbody>
+              <tr><td>Models in pack</td><td class="num">22</td></tr>
+              <tr><td>Total triangles (whole pack)</td><td class="win">~6,600</td></tr>
+              <tr><td>Scene draw calls (typical)</td><td class="num">~50</td></tr>
+              <tr><td>Materials / textures per model</td><td class="num">1 / 1 (shared atlas)</td></tr>
+              <tr><td>Archer animation clips</td><td class="num">32</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="color:var(--ink-soft);font-size:14px">The whole forest is lighter than a single typical game prop, so runtime cost is dominated by the gaze pipeline, not rendering.</p>
+      </section>
+
+      <section id="files">
+        <h2><span class="n">9</span> Files</h2>
+        <pre><code>C:\game integration\game\workingGameTemplate\
+├── forest.html          (3D game page + import map)
+├── forest.js            (scene, gaze-in-3D, game, juice)
+├── vendor\three\        (three.module.min.js, GLTFLoader, OrbitControls)
+├── vendor\utils\        (BufferGeometryUtils.js)
+└── models\              (22 .glb + Textures\colormap.png)
+
+C:\game integration\gaze-detection\
+└── gaze_server.py       (unchanged from Phase 2)</code></pre>
+        <p class="foot">Data Forest · Phase 3 Technical Documentation · 2026-07-26</p>
+      </section>
+    </main>
+  </div>
+</div>

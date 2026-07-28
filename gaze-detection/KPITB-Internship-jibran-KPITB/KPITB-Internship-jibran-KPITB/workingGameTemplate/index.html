@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Flood Response AI Quest — Stage 1: Data Collection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="app">
+  <header>
+    <span class="eyebrow">AI Quest &middot; Flood Response &middot; Stage 1</span>
+    <h1>Collect Flood Data</h1>
+    <p class="subtitle">Click and drag across the field to explore it — the data sources are scattered along the way. Pull each one in, then clean out the redundant and irrelevant ones in the next stage.</p>
+  </header>
+
+  <main>
+    <section id="grid-panel" aria-label="Explorable field of data sources">
+      <div id="world"></div>
+      <div id="minimap"><div id="minimap-thumb"></div></div>
+      <div class="pan-hint" id="pan-hint">← drag to explore →</div>
+    </section>
+
+    <aside id="sidebar" aria-label="Collected data log">
+      <div id="progress-label">
+        <span>COLLECTED</span>
+        <span id="progress-count">0 / 0</span>
+      </div>
+      <div id="progress-track"><div id="progress-fill"></div></div>
+      <h2 id="log-title">Working Dataset</h2>
+      <p class="hint">Click a source to include or exclude it from training — redundant or irrelevant data will hurt accuracy.</p>
+      <ul id="collected-list">
+        <li id="empty-hint" style="list-style:none;background:none;border:none;padding:0;">No data collected yet.</li>
+      </ul>
+      <div id="status-line"></div>
+      <button id="train-btn" disabled>Train Model</button>
+      <div id="train-result"></div>
+    </aside>
+  </main>
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>

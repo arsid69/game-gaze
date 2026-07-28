@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Data Forest — 3D (Phase 3)</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0a1a20;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace; color: #dcebed; }
+  #app { position: fixed; inset: 0; display: block; }
+  #loading { position: fixed; inset: 0; display: grid; place-items: center; z-index: 10;
+    background: radial-gradient(circle at 50% 40%, #123, #06121a); transition: opacity .5s; }
+  #loading.done { opacity: 0; pointer-events: none; }
+  #loading .box { text-align: center; }
+  #loading .bar { width: 240px; height: 4px; background: rgba(255,255,255,.12); border-radius: 3px;
+    margin: 14px auto 0; overflow: hidden; }
+  #loading .fill { height: 100%; width: 0%; background: #4fd8e0; transition: width .2s; }
+  #loading .lbl { font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: #8fb8c0; }
+  #hud { position: fixed; bottom: 14px; left: 14px; z-index: 5; font-size: 12px; line-height: 1.6;
+    background: rgba(6,14,19,.72); border: 1px solid rgba(90,160,170,.3); border-radius: 9px;
+    padding: 9px 12px; pointer-events: none; white-space: pre; }
+  #hud b { color: #6ff0f5; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.min.js"
+  }
+}
+</script>
+</head>
+<body>
+  <canvas id="app"></canvas>
+  <div id="hud">DATA FOREST · Phase 3\n<b>drag</b> to orbit  ·  <b>scroll</b> to zoom</div>
+  <div id="loading"><div class="box">
+    <div class="lbl">Loading forest…</div>
+    <div class="bar"><div class="fill" id="load-fill"></div></div>
+  </div></div>
+  <script type="module" src="forest.js"></script>
+  <script src="quest.js"></script>
+</body>
+</html>

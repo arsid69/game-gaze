@@ -1,0 +1,140 @@
+<title>Data Forest (3D) — Cheat Sheet</title>
+<style>
+  :root{
+    --bg:#eef3f4; --surface:#ffffff; --surface-2:#f4f8f9;
+    --ink:#0d1a1e; --ink-soft:#48595e; --ink-faint:#7b8f94;
+    --line:#d3dfe1; --line-soft:#e6eeef;
+    --accent:#0a7c8b; --accent-strong:#075e6a;
+    --good:#1c8f63; --warn:#a4741a; --crit:#c1443e;
+    --shadow:0 1px 2px rgba(10,40,45,.05),0 10px 26px rgba(10,40,45,.06);
+    --key-face:#ffffff; --key-edge:#c7d4d6;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Code","SF Mono",Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#071418; --surface:#0e2027; --surface-2:#0a1a20; --ink:#dcebed; --ink-soft:#93aab0; --ink-faint:#5e787f;
+    --line:#1d343c; --line-soft:#132831; --accent:#4fd8e0; --accent-strong:#7ff0f5;
+    --good:#3fcf90; --warn:#e0b25c; --crit:#f0736d; --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.36);
+    --key-face:#12262e; --key-edge:#28454e;
+  }}
+  :root[data-theme="light"]{--bg:#eef3f4;--surface:#ffffff;--surface-2:#f4f8f9;--ink:#0d1a1e;--ink-soft:#48595e;--ink-faint:#7b8f94;--line:#d3dfe1;--line-soft:#e6eeef;--accent:#0a7c8b;--accent-strong:#075e6a;--good:#1c8f63;--warn:#a4741a;--crit:#c1443e;--key-face:#ffffff;--key-edge:#c7d4d6}
+  :root[data-theme="dark"]{--bg:#071418;--surface:#0e2027;--surface-2:#0a1a20;--ink:#dcebed;--ink-soft:#93aab0;--ink-faint:#5e787f;--line:#1d343c;--line-soft:#132831;--accent:#4fd8e0;--accent-strong:#7ff0f5;--good:#3fcf90;--warn:#e0b25c;--crit:#f0736d;--key-face:#12262e;--key-edge:#28454e}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:clamp(20px,5vw,52px) clamp(16px,4vw,36px)}
+  .head{margin-bottom:30px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:9px}
+  h1{font-size:clamp(26px,5vw,40px);letter-spacing:-.02em;margin:.35em 0 .2em;font-weight:700;text-wrap:balance}
+  .sub{color:var(--ink-soft);font-size:clamp(15px,2vw,17px);margin:0;max-width:60ch}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint);margin:34px 0 14px;display:flex;align-items:center;gap:10px}
+  h2::after{content:"";flex:1;height:1px;background:var(--line)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+  .steps{display:grid;gap:14px;grid-template-columns:1fr}
+  @media(min-width:680px){.steps{grid-template-columns:1fr 1fr}}
+  .step{padding:18px 20px}
+  .step .no{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:999px;width:24px;height:24px;display:grid;place-items:center;margin-bottom:10px}
+  .step h3{margin:0 0 6px;font-size:17px} .step p{margin:0;color:var(--ink-soft);font-size:14px} .step pre{margin:11px 0 0}
+  pre{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:11px 13px;overflow-x:auto}
+  pre code{font-family:var(--mono);font-size:12.5px;color:var(--accent-strong);white-space:pre;line-height:1.6}
+  code{font-family:var(--mono);font-size:.9em}
+  .ritual{display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;padding:18px 22px;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 8%,var(--surface)),var(--surface));border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line))}
+  .ritual .r-item{display:flex;align-items:center;gap:11px}
+  .ritual .r-txt b{display:block;font-size:15px} .ritual .r-txt span{color:var(--ink-soft);font-size:13px}
+  .ritual .plus{color:var(--ink-faint);font-family:var(--mono)}
+  kbd{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--ink);background:var(--key-face);border:1px solid var(--key-edge);border-bottom-width:3px;border-radius:8px;min-width:30px;height:32px;padding:0 9px;display:inline-flex;align-items:center;justify-content:center}
+  kbd.wide{min-width:auto;padding:0 12px}
+  .rows{display:flex;flex-direction:column}
+  .row{display:flex;align-items:center;gap:16px;padding:13px 18px;border-bottom:1px solid var(--line-soft)} .row:last-child{border-bottom:none}
+  .row .lead{flex:none;min-width:132px;display:flex;align-items:center;gap:7px}
+  .row .desc{color:var(--ink-soft);font-size:14.5px} .row .desc b{color:var(--ink);font-weight:600}
+  .chip{font-family:var(--mono);font-size:12px;padding:4px 9px;border-radius:7px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-soft)}
+  .flow{display:flex;flex-direction:column}
+  .fl{display:flex;gap:14px;padding:14px 18px;border-bottom:1px solid var(--line-soft);align-items:flex-start} .fl:last-child{border-bottom:none}
+  .fl .fn{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:999px;width:24px;height:24px;display:grid;place-items:center;flex:none;margin-top:1px}
+  .fl .ft{font-size:14.5px;color:var(--ink-soft)} .fl .ft b{color:var(--ink)}
+  .trouble{display:flex;flex-direction:column}
+  .tr{display:grid;grid-template-columns:1fr;gap:6px;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
+  @media(min-width:620px){.tr{grid-template-columns:250px 1fr;gap:18px;align-items:start}} .tr:last-child{border-bottom:none}
+  .tr .sym{display:flex;align-items:flex-start;gap:9px;font-weight:600;font-size:14.5px} .tr .fix{color:var(--ink-soft);font-size:14.5px}
+  .dot{flex:none;width:9px;height:9px;border-radius:50%;margin-top:6px} .d-warn{background:var(--warn)} .d-crit{background:var(--crit)} .d-good{background:var(--good)}
+  .stop{margin-top:26px;padding:15px 18px;font-size:14px;color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--line);border-radius:11px} .stop b{color:var(--ink)}
+  .foot{margin-top:22px;color:var(--ink-faint);font-size:12.5px;font-family:var(--mono);text-align:center}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <div class="eyebrow">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"></circle>
+        <circle cx="12" cy="12" r="2.4" fill="currentColor"></circle>
+        <path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+      </svg>
+      Cheat Sheet · Phase 3
+    </div>
+    <h1>Play the 3D Data Forest with your eyes</h1>
+    <p class="sub">Collect the glowing data orbs in a 3D forest by looking at them. Here's how to start it, play it, and fix anything that feels off.</p>
+  </header>
+
+  <h2>What it is</h2>
+  <div class="card" style="padding:18px 20px">
+    <p style="margin:0;font-size:15.5px">A 3D forest where <b>8 glowing orbs</b> (the flood data sources) float around a character. You <b>collect an orb by looking at it and holding still for about a second</b>. Collect all 8 to complete the dataset. Same eye-tracking as the 2D game.</p>
+  </div>
+
+  <h2>Start it up — needs BOTH servers running</h2>
+  <div class="steps">
+    <div class="card step">
+      <div class="no">1</div>
+      <h3>Start the eye tracker</h3>
+      <p>Open a PowerShell window and paste this. Leave it open.</p>
+      <pre><code>cd "C:\game integration\gaze-detection"
+.\gaze_env\Scripts\python.exe gaze_server.py</code></pre>
+    </div>
+    <div class="card step">
+      <div class="no">2</div>
+      <h3>Start the game server</h3>
+      <p>Open a <b>second</b> PowerShell window, paste this, then open <code>http://localhost:8000/forest.html</code> in your browser.</p>
+      <pre><code>cd "C:\game integration\game\workingGameTemplate"
+python -m http.server 8000</code></pre>
+    </div>
+  </div>
+  <div class="card" style="padding:14px 18px;margin-top:14px">
+    <p style="margin:0;font-size:14px;color:var(--ink-soft)"><b style="color:var(--ink)">Why two servers?</b> The 3D game must be served over <code>http://</code> (it won't run by double-clicking the file). The eye tracker is the same program from the 2D game.</p>
+  </div>
+
+  <h2>The two-key ritual · do this every time</h2>
+  <div class="card ritual">
+    <div class="r-item"><kbd>F</kbd><div class="r-txt"><b>Go fullscreen</b><span>Also turns the sound on. Don't skip it — the cursor lands off otherwise.</span></div></div>
+    <span class="plus">then</span>
+    <div class="r-item"><kbd>C</kbd><div class="r-txt"><b>Recenter</b><span>A yellow "LOOK HERE" target appears — look at it until it vanishes.</span></div></div>
+  </div>
+
+  <h2>How to play</h2>
+  <div class="card flow">
+    <div class="fl"><div class="fn">1</div><div class="ft"><b>Look at a glowing orb.</b> It brightens, grows, and its label lights up.</div></div>
+    <div class="fl"><div class="fn">2</div><div class="ft"><b>Hold your gaze ~1 second.</b> The ring fills, the orb pops with particles + a sound, and the archer reacts. Your counter goes up.</div></div>
+    <div class="fl"><div class="fn">3</div><div class="ft"><b>Drag with the mouse to orbit</b> and find orbs hidden behind the character.</div></div>
+    <div class="fl"><div class="fn">4</div><div class="ft"><b>Collect all 8</b> → a win screen appears. <b>Look-and-hold "Train the Model"</b>, then <b>"Play Again"</b> — no mouse needed on the win screen.</div></div>
+  </div>
+
+  <h2>Controls</h2>
+  <div class="card rows">
+    <div class="row"><div class="lead"><span class="chip">look + hold ~1s</span></div><div class="desc"><b>Collects</b> the orb you're looking at (or clicks a win-screen button).</div></div>
+    <div class="row"><div class="lead"><kbd>F</kbd></div><div class="desc">Fullscreen on / off (and enables sound).</div></div>
+    <div class="row"><div class="lead"><kbd>C</kbd></div><div class="desc"><b>Recenter</b> — press whenever the cursor feels shifted.</div></div>
+    <div class="row"><div class="lead"><kbd>G</kbd></div><div class="desc">Turn gaze control off / on.</div></div>
+    <div class="row"><div class="lead"><span class="chip">mouse drag</span></div><div class="desc">Orbit the camera to look around.</div></div>
+  </div>
+
+  <h2>If something feels wrong</h2>
+  <div class="card trouble">
+    <div class="tr"><div class="sym"><span class="dot d-crit"></span>Nothing loads / blank page</div><div class="fix">Make sure the <b>game server</b> (step 2) is running, and you opened <code>http://localhost:8000/forest.html</code> — not the file directly.</div></div>
+    <div class="tr"><div class="sym"><span class="dot d-crit"></span>Cursor is in the wrong place</div><div class="fix">Press <kbd>F</kbd> for fullscreen, then <kbd>C</kbd> and look at the yellow target.</div></div>
+    <div class="tr"><div class="sym"><span class="dot d-warn"></span>Orbs are hard to select</div><div class="fix">Recenter again (<kbd>C</kbd>), and orbit an orb toward the <b>middle</b> of the screen — gaze is sharpest at center.</div></div>
+    <div class="tr"><div class="sym"><span class="dot d-warn"></span>No cursor / "face —"</div><div class="fix">Check the <b>eye-tracker</b> window (step 1) is running; the bottom-left label should show <code>face: yes</code>.</div></div>
+    <div class="tr"><div class="sym"><span class="dot d-warn"></span>No sound</div><div class="fix">Press any key (e.g. <kbd>F</kbd>) once — browsers only allow sound after a key-press.</div></div>
+  </div>
+
+  <div class="stop">When finished, press <b>Ctrl + C</b> in <b>both</b> PowerShell windows to stop the servers (frees the webcam and the port).</div>
+  <p class="foot">Data Forest · Phase 3 Cheat Sheet</p>
+</div>

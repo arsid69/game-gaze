@@ -1,0 +1,905 @@
+<title>Gaze Detection — Project Cheat Sheet</title>
+
+<style>
+  :root {
+    --paper:      #F3F5F7;
+    --card:       #FFFFFF;
+    --ink:        #131A22;
+    --ink-soft:   #4A5A67;
+    --ink-faint:  #788894;
+    --rule:       #DBE2E7;
+    --rule-soft:  #E9EEF1;
+    --accent:     #D4600B;
+    --accent-bg:  #FDF0E4;
+    --good:       #157F43;
+    --good-bg:    #E6F4EC;
+    --bad:        #B3261E;
+    --bad-bg:     #FBEAE9;
+    --cyan:       #0A7C95;
+
+    --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+
+    --measure: 68ch;
+    --radius: 3px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:     #0D1318;
+      --card:      #141C23;
+      --ink:       #E6EDF2;
+      --ink-soft:  #A3B2BD;
+      --ink-faint: #71818D;
+      --rule:      #263139;
+      --rule-soft: #1C252C;
+      --accent:    #F2933F;
+      --accent-bg: #2A1B0E;
+      --good:      #4FBB7C;
+      --good-bg:   #12261A;
+      --bad:       #E4776E;
+      --bad-bg:    #2A1614;
+      --cyan:      #4FC3DA;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:     #0D1318;
+    --card:      #141C23;
+    --ink:       #E6EDF2;
+    --ink-soft:  #A3B2BD;
+    --ink-faint: #71818D;
+    --rule:      #263139;
+    --rule-soft: #1C252C;
+    --accent:    #F2933F;
+    --accent-bg: #2A1B0E;
+    --good:      #4FBB7C;
+    --good-bg:   #12261A;
+    --bad:       #E4776E;
+    --bad-bg:    #2A1614;
+    --cyan:      #4FC3DA;
+  }
+  :root[data-theme="light"] {
+    --paper:     #F3F5F7;
+    --card:      #FFFFFF;
+    --ink:       #131A22;
+    --ink-soft:  #4A5A67;
+    --ink-faint: #788894;
+    --rule:      #DBE2E7;
+    --rule-soft: #E9EEF1;
+    --accent:    #D4600B;
+    --accent-bg: #FDF0E4;
+    --good:      #157F43;
+    --good-bg:   #E6F4EC;
+    --bad:       #B3261E;
+    --bad-bg:    #FBEAE9;
+    --cyan:      #0A7C95;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.75rem;
+  }
+
+  /* ---------- masthead ---------- */
+  .masthead { display: flex; flex-direction: column; gap: 1rem; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font-size: clamp(2rem, 5vw, 2.9rem);
+    line-height: 1.08;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  .standfirst {
+    max-width: var(--measure);
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+  }
+  .masthead-rule { height: 3px; background: var(--accent); width: 64px; }
+
+  /* ---------- sections ---------- */
+  section { display: flex; flex-direction: column; gap: 1.1rem; }
+  h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin: 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+  }
+  h2 .num {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+  }
+  h3 {
+    font-size: 1rem;
+    font-weight: 650;
+    margin: 0;
+    letter-spacing: -0.005em;
+  }
+  p { margin: 0; max-width: var(--measure); }
+  .lead { color: var(--ink-soft); }
+
+  /* ---------- concept cards: what / why / how ---------- */
+  .concept {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 1.15rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    break-inside: avoid;
+  }
+  .concept-head { display: flex; align-items: baseline; gap: 0.7rem; flex-wrap: wrap; }
+  .concept-head .tag {
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    color: var(--accent);
+    background: var(--accent-bg);
+    padding: 0.1rem 0.4rem;
+    border-radius: 2px;
+  }
+  .wwh { display: flex; flex-direction: column; gap: 0.6rem; }
+  .wwh > div {
+    display: grid;
+    grid-template-columns: 4.6rem 1fr;
+    gap: 0.85rem;
+    align-items: start;
+  }
+  .wwh dt, .wwh .k {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding-top: 0.28rem;
+  }
+  .wwh .v { color: var(--ink); }
+  .wwh .v code { font-size: 0.86em; }
+
+  @media (max-width: 560px) {
+    .wwh > div { grid-template-columns: 1fr; gap: 0.15rem; }
+    .wwh .k { padding-top: 0; }
+  }
+
+  /* ---------- axis diagrams ---------- */
+  .axes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1rem;
+  }
+  .axis-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    align-items: center;
+    text-align: center;
+    break-inside: avoid;
+  }
+  .axis-card svg { width: 100%; height: auto; max-width: 150px; }
+  .axis-name { font-family: var(--mono); font-size: 0.8rem; color: var(--accent); letter-spacing: 0.06em; }
+  .axis-desc { font-size: 0.88rem; color: var(--ink-soft); }
+  .axis-plain { font-size: 0.88rem; font-weight: 600; }
+
+  /* ---------- formula ---------- */
+  .formula {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 1rem 1.15rem;
+    font-family: var(--mono);
+    font-size: 0.92rem;
+    overflow-x: auto;
+    line-height: 1.75;
+  }
+  .formula .comment { color: var(--ink-faint); }
+
+  /* ---------- tables ---------- */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--card); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  thead th {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    background: var(--rule-soft);
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td code { font-size: 0.88em; white-space: nowrap; }
+  .num-col { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  code {
+    font-family: var(--mono);
+    background: var(--rule-soft);
+    padding: 0.08em 0.34em;
+    border-radius: 2px;
+    font-size: 0.9em;
+  }
+
+  /* ---------- split: label vs measured ---------- */
+  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+  .split-card {
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    break-inside: avoid;
+  }
+  .split-card.answer { background: var(--good-bg); border-color: var(--good); }
+  .split-card.measured { background: var(--accent-bg); border-color: var(--accent); }
+  .split-card h3 { font-size: 1.05rem; }
+  .split-card .who { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .split-card.answer .who { color: var(--good); }
+  .split-card.measured .who { color: var(--accent); }
+  .split-card ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.92rem; }
+
+  /* ---------- callout ---------- */
+  .callout {
+    border-left: 3px solid var(--cyan);
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 0.9rem 1.1rem;
+    font-size: 0.94rem;
+    color: var(--ink-soft);
+    break-inside: avoid;
+  }
+  .callout strong { color: var(--ink); }
+
+  /* ---------- pipeline ---------- */
+  .pipeline { display: flex; flex-direction: column; gap: 0.5rem; }
+  .stage {
+    display: grid;
+    grid-template-columns: 2rem 1fr;
+    gap: 0.9rem;
+    align-items: start;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 0.8rem 1rem;
+    break-inside: avoid;
+  }
+  .stage .step {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--accent);
+    padding-top: 0.12rem;
+  }
+  .stage .what { font-weight: 620; font-size: 0.95rem; }
+  .stage .detail { font-size: 0.89rem; color: var(--ink-soft); }
+
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.25rem;
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  /* ---------- print → PDF ---------- */
+  @media print {
+    :root {
+      --paper: #FFFFFF; --card: #FFFFFF; --ink: #000000;
+      --ink-soft: #333333; --ink-faint: #555555;
+      --rule: #BBBBBB; --rule-soft: #EEEEEE;
+      --accent: #A64B08; --accent-bg: #F7EEE6;
+      --good: #106133; --good-bg: #EDF5F0; --bad: #8C1E18; --bad-bg: #F7ECEB;
+    }
+    body { font-size: 10.5pt; }
+    .wrap { max-width: none; padding: 0; gap: 1.6rem; }
+    h1 { font-size: 22pt; }
+    h2 { font-size: 13pt; page-break-after: avoid; }
+    section { page-break-inside: auto; }
+    .concept, .axis-card, .split-card, .stage, .callout, .formula, .table-scroll { page-break-inside: avoid; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">Reference sheet · webcam eye tracking</div>
+    <h1>Gaze Detection: every part explained</h1>
+    <div class="masthead-rule"></div>
+    <p class="standfirst">
+      How a plain 720p laptop webcam works out where someone is looking on screen —
+      no infrared, no depth sensor, no headset. Every term, feature and number in
+      the project, in one place.
+    </p>
+  </header>
+
+  <!-- ========== 1. THE IDEA ========== -->
+  <section>
+    <h2><span class="num">01</span> The idea in one minute</h2>
+    <p class="lead">
+      A camera can see which way your eyes point, but not <em>where on the screen</em>
+      that lands — the same eye angle means a different spot depending on how far
+      away and how high your head sits. So the system does three things: measure the
+      eyes, lock the head into a known position, and learn the personal mapping from
+      "eye angle" to "screen pixel".
+    </p>
+
+    <div class="pipeline">
+      <div class="stage">
+        <div class="step">01</div>
+        <div>
+          <div class="what">Camera captures a frame</div>
+          <div class="detail">1280×720, mirrored so it behaves like a mirror. Native 16:9 — using 640×480 would crop the lens and break the distance maths.</div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="step">02</div>
+        <div>
+          <div class="what">MediaPipe finds 478 face landmarks</div>
+          <div class="detail">Points on the face, including the irises. Everything geometric is derived from these.</div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="step">03</div>
+        <div>
+          <div class="what">Positioning gate checks you are sat correctly</div>
+          <div class="detail">45–65 cm away and roughly centred. Out of range, nothing downstream is recorded or trusted.</div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="step">04</div>
+        <div>
+          <div class="what">L2CS neural network reads eye direction</div>
+          <div class="detail">Takes a square crop of the face, returns two angles: <code>gaze_pitch</code> and <code>gaze_yaw</code>.</div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="step">05</div>
+        <div>
+          <div class="what">Calibration converts angles → screen position</div>
+          <div class="detail">A polynomial learned from your own data. Output is <code>(x, y)</code> between 0 and 1.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 2. ANGLES ========== -->
+  <section>
+    <h2><span class="num">02</span> Pitch, yaw, roll — the three ways a thing rotates</h2>
+    <p class="lead">
+      Borrowed from aircraft. Any object rotating in 3D does it around three axes,
+      and these are their names. The project uses them twice: once for the
+      <strong>head</strong>, once for the <strong>eyes</strong>.
+    </p>
+
+    <div class="axes">
+      <div class="axis-card">
+        <svg viewBox="0 0 120 100" aria-label="Pitch: nodding up and down">
+          <line x1="14" y1="50" x2="106" y2="50" stroke="currentColor" stroke-width="1" stroke-dasharray="4 4" opacity="0.35"/>
+          <ellipse cx="60" cy="50" rx="21" ry="27" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="53" cy="44" r="2.4" fill="currentColor"/>
+          <circle cx="67" cy="44" r="2.4" fill="currentColor"/>
+          <path d="M92 34 A 26 26 0 0 1 92 66" fill="none" stroke="#D4600B" stroke-width="2.4"/>
+          <path d="M92 66 l -5 -6 l 8 -1 z" fill="#D4600B"/>
+          <path d="M92 34 l 5 6 l -8 1 z" fill="#D4600B"/>
+        </svg>
+        <div class="axis-name">PITCH</div>
+        <div class="axis-plain">Nodding “yes”</div>
+        <div class="axis-desc">Tilting up / down. Rotation about the side-to-side axis.</div>
+      </div>
+
+      <div class="axis-card">
+        <svg viewBox="0 0 120 100" aria-label="Yaw: shaking head left and right">
+          <line x1="60" y1="10" x2="60" y2="92" stroke="currentColor" stroke-width="1" stroke-dasharray="4 4" opacity="0.35"/>
+          <ellipse cx="60" cy="50" rx="21" ry="27" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="53" cy="44" r="2.4" fill="currentColor"/>
+          <circle cx="67" cy="44" r="2.4" fill="currentColor"/>
+          <path d="M34 84 A 30 30 0 0 0 86 84" fill="none" stroke="#D4600B" stroke-width="2.4"/>
+          <path d="M34 84 l 7 -3 l 0 8 z" fill="#D4600B"/>
+          <path d="M86 84 l -7 -3 l 0 8 z" fill="#D4600B"/>
+        </svg>
+        <div class="axis-name">YAW</div>
+        <div class="axis-plain">Shaking “no”</div>
+        <div class="axis-desc">Turning left / right. Rotation about the vertical axis.</div>
+      </div>
+
+      <div class="axis-card">
+        <svg viewBox="0 0 120 100" aria-label="Roll: tilting head toward shoulder">
+          <circle cx="60" cy="50" r="2.5" fill="currentColor" opacity="0.4"/>
+          <ellipse cx="60" cy="50" rx="21" ry="27" fill="none" stroke="currentColor" stroke-width="2" transform="rotate(18 60 50)"/>
+          <circle cx="51" cy="45" r="2.4" fill="currentColor" transform="rotate(18 60 50)"/>
+          <circle cx="65" cy="45" r="2.4" fill="currentColor" transform="rotate(18 60 50)"/>
+          <path d="M60 12 A 38 38 0 0 1 94 44" fill="none" stroke="#D4600B" stroke-width="2.4"/>
+          <path d="M94 44 l -7 -1 l 3 -7 z" fill="#D4600B"/>
+        </svg>
+        <div class="axis-name">ROLL</div>
+        <div class="axis-plain">Ear toward shoulder</div>
+        <div class="axis-desc">Tilting sideways. Rotation about the axis pointing at the camera.</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>The one thing people mix up:</strong> <code>head_pitch</code> is which way your
+      <em>head</em> points. <code>gaze_pitch</code> is which way your <em>eyes</em> point. You can
+      hold your head still and move only your eyes — that is why both are recorded separately.
+    </div>
+  </section>
+
+  <!-- ========== 3. DISTANCE ========== -->
+  <section>
+    <h2><span class="num">03</span> Distance — how a flat image knows how far away you are</h2>
+
+    <div class="concept">
+      <div class="concept-head">
+        <h3>The known-size trick</h3>
+        <span class="tag">pos_distance_cm</span>
+      </div>
+      <div class="wwh">
+        <div>
+          <div class="k">What</div>
+          <div class="v">How far your eyes are from the screen, in centimetres.</div>
+        </div>
+        <div>
+          <div class="k">Why</div>
+          <div class="v">Eye angle alone is ambiguous — the same angle hits a different screen point at 45 cm than at 65 cm. Distance is also what the positioning gate enforces.</div>
+        </div>
+        <div>
+          <div class="k">How</div>
+          <div class="v">The gap between your two pupils is roughly <strong>6.3 cm</strong> for every adult. The camera sees that gap as a number of pixels. Closer = more pixels. Rearranging the camera equation gives distance.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="formula">
+distance_cm = focal_px × 6.3 / ipd_px
+
+<span class="comment">ipd_px   pixels between the two irises (landmarks 468 ↔ 473)
+focal_px the camera's "zoom factor" in pixels — 1073 on this laptop,
+         measured by sitting at exactly 50 cm and pressing 'c'</span>
+
+<span class="comment">worked example:</span> 1073 × 6.3 / 130 px = 52 cm
+    </div>
+
+    <div class="callout">
+      <strong>Same idea as a camera-only car.</strong> A reversing car with no ultrasonic sensor
+      judges distance the same way — it knows a number plate is 52 cm wide, measures how wide it
+      looks, and works backwards. We know pupils sit 6.3 cm apart.
+    </div>
+  </section>
+
+  <!-- ========== 4. FEATURES ========== -->
+  <section>
+    <h2><span class="num">04</span> Every feature in the dataset</h2>
+    <p class="lead">
+      32 numbers measured from each video frame. These are the model's <strong>input</strong>.
+    </p>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Column</th><th>What it is</th><th>Why it helps</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>gaze_pitch</code><br><code>gaze_yaw</code></td>
+            <td>Eye direction in radians, from the L2CS neural network.</td>
+            <td><strong>The strongest signal by far.</strong> A deep network trained on
+                thousands of faces — not a hand-written rule.</td>
+          </tr>
+          <tr>
+            <td><code>head_pitch</code><br><code>head_yaw</code><br><code>head_roll</code></td>
+            <td>Head rotation in degrees.</td>
+            <td>Same eyes + different head angle = different screen point. Lets the model separate the two.</td>
+          </tr>
+          <tr>
+            <td><code>head_tx</code><br><code>head_ty</code><br><code>head_tz</code></td>
+            <td>Head position in space. <code>tz</code> ≈ distance from camera.</td>
+            <td>Where the head sits, not just how it is turned.</td>
+          </tr>
+          <tr>
+            <td><code>iris_left_x/y</code><br><code>iris_right_x/y</code></td>
+            <td>Iris position in the camera image, 0–1.</td>
+            <td>Raw eye location. Moves when the <em>head</em> moves too, so on its own it is ambiguous.</td>
+          </tr>
+          <tr>
+            <td><code>iris_*_ratio_x</code><br><code>iris_*_ratio_y</code></td>
+            <td>Iris position <em>inside its own eye</em>. 0 = outer corner, 1 = inner corner.</td>
+            <td><strong>The good one.</strong> Cancels out head position — looking left gives the
+                same value wherever your head is in frame.</td>
+          </tr>
+          <tr>
+            <td><code>eye_*_inner_x/y</code><br><code>eye_*_outer_x/y</code></td>
+            <td>The four eye-corner points.</td>
+            <td>The reference frame the iris ratio is measured against; also encodes eye shape and size.</td>
+          </tr>
+          <tr>
+            <td><code>ear_left</code><br><code>ear_right</code></td>
+            <td>Eye Aspect Ratio — height ÷ width of the eye. ≈0.3 open, ≈0.1 blinking.</td>
+            <td>Flags blinks and squints, when eye readings are unreliable. Also catches the
+                drooping-eyelid effect when looking down.</td>
+          </tr>
+          <tr>
+            <td><code>face_width</code><br><code>face_height</code></td>
+            <td>Face size in the image, 0–1.</td>
+            <td>Scale cue — a bigger face means closer.</td>
+          </tr>
+          <tr>
+            <td><code>ipd_px</code></td>
+            <td>Pixels between the pupils.</td>
+            <td>The raw measurement distance is calculated from.</td>
+          </tr>
+          <tr>
+            <td><code>pos_distance_cm</code></td>
+            <td>Distance from screen, cm.</td>
+            <td>See section 03.</td>
+          </tr>
+          <tr>
+            <td><code>pos_face_dx</code><br><code>pos_face_dy</code></td>
+            <td>How far off-centre the face sits. 0 = centred.</td>
+            <td>Off-centre viewing skews the mapping; recording it lets the model correct for it.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ========== 5. READING THE CSV ========== -->
+  <section>
+    <h2><span class="num">05</span> Reading the CSV: fixed points vs your data</h2>
+    <p class="lead">
+      Every row pairs <em>what the camera measured</em> with <em>where the dot actually was</em>.
+      Those are the two halves of the file.
+    </p>
+
+    <div class="split">
+      <div class="split-card answer">
+        <div class="who">The fixed data — the answer</div>
+        <h3>target_x, target_y</h3>
+        <p>Where the dot was drawn on screen, as a fraction: <code>0,0</code> is top-left,
+           <code>1,1</code> is bottom-right, <code>0.5,0.5</code> is dead centre.</p>
+        <ul>
+          <li>The program drew the dot, so this is known <strong>exactly</strong>.</li>
+          <li>Never a guess or a prediction.</li>
+          <li>2 columns — sits right after the ID columns at the front.</li>
+        </ul>
+      </div>
+
+      <div class="split-card measured">
+        <div class="who">Your data — the measurements</div>
+        <h3>the 32 feature columns</h3>
+        <p>Everything the webcam observed about your face and eyes at the moment you were
+           looking at that dot.</p>
+        <ul>
+          <li>Changes person to person, frame to frame.</li>
+          <li>This is what the model reads <em>from</em>.</li>
+          <li>Starts at <code>gaze_pitch</code> and runs to <code>pos_face_dy</code>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="formula">
+<span class="comment">source              user   session_id       target_x  target_y   ← what + THE ANSWER</span>
+milestone4_pursuit  arsi   20260721-000011  0.076425  0.050000
+
+<span class="comment">gaze_pitch  gaze_yaw  head_pitch  ear_left  pos_distance_cm  …    ← YOUR MEASUREMENTS</span>
+0.113651    0.064504  -14.288233  0.234893  54.500287
+    </div>
+
+    <div class="callout">
+      <strong>Where the dot was fixed vs moving:</strong> in
+      <code>milestone4_pursuit</code> rows the dot glides along a path, so target values
+      change smoothly. In <code>milestone7_game</code> rows it sits still at a random spot
+      until popped. The strictly fixed grids — the 5 validation dots and the 9 test dots —
+      are deliberately <em>never</em> saved, because they are the exam paper: reusing them for
+      training would make every accuracy score a lie.
+    </div>
+  </section>
+
+  <!-- ========== 6. CALIBRATION ========== -->
+  <section>
+    <h2><span class="num">06</span> Calibration and why it must be personal</h2>
+
+    <div class="grid-2">
+      <div class="concept">
+        <div class="concept-head"><h3>Why calibrate at all</h3></div>
+        <div class="wwh">
+          <div>
+            <div class="k">Problem</div>
+            <div class="v">The network gives an angle, not a pixel. Your face shape, eye spacing, seating height and screen size all change what that angle lands on.</div>
+          </div>
+          <div>
+            <div class="k">Fix</div>
+            <div class="v">Show dots at known places, record the angles, fit a curve from angle → screen position for <em>this</em> person.</div>
+          </div>
+          <div>
+            <div class="k">Result</div>
+            <div class="v">A degree-3 polynomial with 10 terms, stored in <code>calibration_model.pkl</code>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="concept">
+        <div class="concept-head"><h3>Drift correction</h3></div>
+        <div class="wwh">
+          <div>
+            <div class="k">Problem</div>
+            <div class="v">You never sit down in exactly the same pose twice. One or two degrees of head tilt shifts <em>every</em> prediction by the same amount.</div>
+          </div>
+          <div>
+            <div class="k">Symptom</div>
+            <div class="v">On the accuracy map, all error arrows point the same way and are the same length.</div>
+          </div>
+          <div>
+            <div class="k">Fix</div>
+            <div class="v">Look at one centre dot at the start of a session, measure the offset, subtract it from everything after.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Why the dot sweeps the edges twice.</strong> A plain left-right-left snake only
+      touches the screen edges for an instant, so the curve had almost no corner data and had to
+      guess out there — the top-right corner was wrong by 6.2 cm. Adding a slow lap around the
+      perimeter dropped that same corner to 0.7 cm.
+    </div>
+  </section>
+
+  <!-- ========== 7. AIM ASSIST + DATA LOOP ========== -->
+  <section>
+    <h2><span class="num">07</span> Aim assist, and how the game trains the model</h2>
+    <p class="lead">
+      The game does two jobs beyond being fun: it <strong>helps you hit targets</strong>
+      (aim assist) and it <strong>collects training data</strong> while you play, so the
+      model improves the more you use it.
+    </p>
+
+    <h3 style="margin-top:0.4rem">Aim assist — the hidden magnet</h3>
+
+    <div class="grid-2">
+      <div class="concept">
+        <div class="concept-head">
+          <h3>How the pull works</h3>
+          <span class="tag">milestone7</span>
+        </div>
+        <div class="wwh">
+          <div>
+            <div class="k">What</div>
+            <div class="v">When your gaze cursor gets near a target it is dragged toward it — gently at the edge, locking on completely when close. Like aim assist in a console shooter.</div>
+          </div>
+          <div>
+            <div class="k">Why</div>
+            <div class="v">Eye tracking is accurate to about 2 cm. Without help, small targets are frustrating to hit even when you are looking straight at them.</div>
+          </div>
+          <div>
+            <div class="k">How</div>
+            <div class="v"><code>assisted = raw + (target − raw) × pull</code>, where <code>pull</code> grows from 0 at the edge of the magnet field to 1.0 inside the snap zone.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="axis-card" style="justify-content:center">
+        <svg viewBox="0 0 200 170" aria-label="Three zones: visible ring, snap zone, hidden magnet field">
+          <circle cx="100" cy="80" r="72" fill="none" stroke="#D4600B" stroke-width="1.6" stroke-dasharray="5 5" opacity="0.75"/>
+          <circle cx="100" cy="80" r="42" fill="none" stroke="#D4600B" stroke-width="1.6" opacity="0.5"/>
+          <circle cx="100" cy="80" r="22" fill="none" stroke="currentColor" stroke-width="2.2"/>
+          <circle cx="100" cy="80" r="4.5" fill="#D4600B"/>
+          <circle cx="163" cy="42" r="5" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.55"/>
+          <path d="M158 47 L 118 68" stroke="#D4600B" stroke-width="1.8" stroke-dasharray="3 3"/>
+          <path d="M118 68 l 8 0.5 l -3 -7 z" fill="#D4600B"/>
+          <text x="100" y="166" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.75">raw gaze is pulled inward</text>
+        </svg>
+        <div class="axis-desc" style="font-size:0.82rem">
+          Solid inner ring = what you see. Everything outside it is invisible.
+        </div>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Zone</th><th class="num-col">Size</th><th>Visible?</th><th>What happens</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Target ring</strong></td>
+            <td class="num-col">70 px · 1.9 cm</td>
+            <td>Yes — the circle you see</td>
+            <td>Cursor inside here for 0.8 s pops the target.</td>
+          </tr>
+          <tr>
+            <td><strong>Snap zone</strong></td>
+            <td class="num-col">130 px · 3.5 cm</td>
+            <td><strong>No</strong></td>
+            <td>Cursor locks fully onto the target centre.</td>
+          </tr>
+          <tr>
+            <td><strong>Magnet field</strong></td>
+            <td class="num-col">330 px · 8.9 cm</td>
+            <td><strong>No</strong></td>
+            <td>Cursor is dragged inward, stronger the closer it gets.</td>
+          </tr>
+          <tr>
+            <td>Outside</td>
+            <td class="num-col">—</td>
+            <td>—</td>
+            <td>No help. Cursor follows your gaze exactly.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <strong>Why it once looked broken.</strong> The first version used a 160 px magnet with a
+      maximum pull of 65%. But the tracker's own error is often 150–220 px — so the cursor
+      usually never entered the field at all, and even when it did, a 65% pull could not finish
+      the job. Widening it to 330 px and allowing a full lock is what made it work.
+      Press <code>d</code> during the game to reveal the hidden zones.
+    </div>
+
+    <h3 style="margin-top:0.9rem">The training loop — playing makes it better</h3>
+
+    <div class="concept">
+      <div class="concept-head">
+        <h3>Why the game is also a data collector</h3>
+        <span class="tag">milestone7_game</span>
+      </div>
+      <div class="wwh">
+        <div>
+          <div class="k">What</div>
+          <div class="v">While you hold your gaze on a target, the program saves what the camera sees along with that target's position — a free labelled training row.</div>
+        </div>
+        <div>
+          <div class="k">Why</div>
+          <div class="v">Calibration alone gives one sweep of data. Every game adds more, from more head positions, so the model keeps improving instead of going stale.</div>
+        </div>
+        <div>
+          <div class="k">How</div>
+          <div class="v">After each game the rows are appended to the CSV and the model is refitted on everything collected so far (once there are 200+ rows).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>The trap this had to avoid.</strong> Aim assist puts the cursor on the target
+      even when you are <em>not</em> looking there. If training data were taken from the
+      assisted cursor, the assist would be inventing its own answers and poisoning the dataset.
+      So data is only ever judged from your <strong>raw</strong> gaze, and only when it is
+      genuinely <strong>still</strong> — held within 3.2 cm for a quarter second. Steady eyes
+      count, darting eyes do not.
+    </div>
+
+    <div class="callout">
+      <strong>Why “still” and not “close to the target”.</strong> If we only saved rows where
+      the gaze already landed near the dot, we would only ever collect examples the model
+      already gets right — and learn nothing. The valuable rows are the ones where your eyes
+      are locked on the target but the model is still wrong. Those are the corrections.
+    </div>
+  </section>
+
+  <!-- ========== 8. NUMBERS ========== -->
+  <section>
+    <h2><span class="num">08</span> Numbers worth remembering</h2>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Thing</th><th class="num-col">Value</th><th>Meaning</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Typical accuracy</td><td class="num-col">2.0–2.4 cm</td><td>Average miss on screen. Commercial webcam trackers: 2–4 cm. Infrared hardware: under 1 cm.</td></tr>
+          <tr><td>Allowed distance</td><td class="num-col">45–65 cm</td><td>The green band in the parking-sensor display.</td></tr>
+          <tr><td>Centring tolerance</td><td class="num-col">±12%</td><td>How far off-centre the face may drift before the gate blocks.</td></tr>
+          <tr><td>Assumed pupil gap</td><td class="num-col">6.3 cm</td><td>Adult average. Varies ±0.4 cm, so distance carries about ±6% error per person.</td></tr>
+          <tr><td>Measured focal length</td><td class="num-col">1073 px</td><td>This laptop's camera, measured at 50 cm.</td></tr>
+          <tr><td>Camera resolution</td><td class="num-col">1280×720</td><td>Sensor-native. Dropping to 640×480 crops the lens and skews distance.</td></tr>
+          <tr><td>Calibration sweep</td><td class="num-col">≈86 s</td><td>Produces roughly 500 rows of training data.</td></tr>
+          <tr><td>Frame rate</td><td class="num-col">8–15 fps</td><td>Limited by the neural network on CPU, not the camera.</td></tr>
+          <tr><td>Polynomial degree</td><td class="num-col">3</td><td>Cubic. Degree 2 could not bend enough for the bottom of the screen.</td></tr>
+          <tr><td>Screen size used</td><td class="num-col">34.4 × 19.4 cm</td><td>Read from Windows, used to convert errors into centimetres.</td></tr>
+          <tr><td>Aim assist magnet</td><td class="num-col">330 px · 8.9 cm</td><td>Invisible pull radius. Must be bigger than the tracker's own error or it never triggers.</td></tr>
+          <tr><td>Aim assist snap</td><td class="num-col">130 px · 3.5 cm</td><td>Inside this the cursor locks fully onto the target.</td></tr>
+          <tr><td>Fixation hold</td><td class="num-col">0.25 s</td><td>How long your eyes must stay still before a row is saved as training data.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ========== 9. SCRIPTS ========== -->
+  <section>
+    <h2><span class="num">09</span> What each script does</h2>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Run this</th><th>It does</th><th>Saves data?</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>milestone1_face_mesh.py</code></td><td>Draws the 478 face landmarks. Check the camera works.</td><td>No</td></tr>
+          <tr><td><code>milestone2_eye_headpose.py</code></td><td>Eye crops plus head pitch/yaw/roll on screen.</td><td>No</td></tr>
+          <tr><td><code>milestone3_gaze_model.py</code></td><td>Raw gaze arrow, before any calibration.</td><td>No</td></tr>
+          <tr><td><code>milestone5_positioning.py</code></td><td>Parking-sensor display. Press <code>c</code> at exactly 50 cm to measure focal length.</td><td>No</td></tr>
+          <tr><td><code>milestone4_calibration.py</code></td><td>The main event: position check → 86 s dot sweep → 5 validation dots.</td><td><strong>Yes</strong> — <code>milestone4_pursuit</code></td></tr>
+          <tr><td><code>milestone6_test_accuracy.py</code></td><td>9 test dots, reports the error in cm and explains it.</td><td>No — this is the exam</td></tr>
+          <tr><td><code>milestone7_gaze_game.py</code></td><td>Pop 10 targets by looking at them. Retrains the model afterwards.</td><td><strong>Yes</strong> — <code>milestone7_game</code></td></tr>
+          <tr><td><code>milestone8_live_cursor.py</code></td><td>Cursor follows your eyes. Press <code>m</code> to drive the real mouse.</td><td>No — no known answer</td></tr>
+          <tr><td><code>inspect_dataset.py</code></td><td>Plain summary of what is in the dataset right now.</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ========== 10. GLOSSARY ========== -->
+  <section>
+    <h2><span class="num">10</span> Glossary</h2>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Term</th><th>Plain meaning</th></tr></thead>
+        <tbody>
+          <tr><td>Landmark</td><td>One of 478 tracked points on the face.</td></tr>
+          <tr><td>IPD</td><td>Interpupillary distance — the gap between your two pupils.</td></tr>
+          <tr><td>Focal length</td><td>The camera's zoom factor, in pixels. Converts apparent size into real distance.</td></tr>
+          <tr><td>Pinhole model</td><td>The simple camera equation: things look smaller the further away they are, in exact proportion.</td></tr>
+          <tr><td>EAR</td><td>Eye Aspect Ratio — how open an eye is.</td></tr>
+          <tr><td>Radians</td><td>Another way to measure angles. 3.14 rad = 180°.</td></tr>
+          <tr><td>Normalized</td><td>Rescaled to 0–1, so it means the same on any screen or resolution.</td></tr>
+          <tr><td>Ground truth</td><td>The known correct answer — here, where the dot really was.</td></tr>
+          <tr><td>Feature</td><td>One measured input number the model learns from.</td></tr>
+          <tr><td>Label</td><td>The answer the model is trying to produce.</td></tr>
+          <tr><td>Polynomial fit</td><td>Fitting a curve through the data so unseen inputs can be predicted.</td></tr>
+          <tr><td>Held-out data</td><td>Data kept out of training so the score is honest.</td></tr>
+          <tr><td>Session</td><td>One sitting. Posture differs between sessions, which is why each is tagged.</td></tr>
+          <tr><td>Smooth pursuit</td><td>The eye movement used to follow something moving — steady, not jumpy.</td></tr>
+          <tr><td>Saccade</td><td>The fast jump the eye makes between two fixed points.</td></tr>
+          <tr><td>Fixation</td><td>Holding the eyes still on one spot. Only fixations become training data.</td></tr>
+          <tr><td>Aim assist</td><td>Pulling the cursor toward a target once it is close, so small targets are hittable.</td></tr>
+          <tr><td>Snap zone</td><td>The inner radius where the cursor locks fully onto the target.</td></tr>
+          <tr><td>Retraining</td><td>Refitting the model on all data collected so far, including new game rows.</td></tr>
+          <tr><td>ONNX</td><td>A portable format for running a trained neural network fast.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <div>Gaze detection project · reference sheet</div>
+    <div>Full technical detail in <code>TECHNICAL_DOCUMENTATION.md</code> · column-by-column notes in <code>data/README.md</code></div>
+    <div>To save as PDF: Ctrl+P → Destination “Save as PDF” → Background graphics on.</div>
+  </footer>
+
+</div>

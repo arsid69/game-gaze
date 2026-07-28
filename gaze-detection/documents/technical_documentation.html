@@ -1,0 +1,934 @@
+<title>Gaze Detection — Technical Documentation</title>
+
+<style>
+  :root {
+    --paper:      #F3F5F7;
+    --card:       #FFFFFF;
+    --ink:        #131A22;
+    --ink-soft:   #4A5A67;
+    --ink-faint:  #788894;
+    --rule:       #DBE2E7;
+    --rule-soft:  #E9EEF1;
+    --accent:     #D4600B;
+    --accent-bg:  #FDF0E4;
+    --good:       #157F43;
+    --bad:        #B3261E;
+    --cyan:       #0A7C95;
+
+    --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+    --measure: 74ch;
+    --radius: 3px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0D1318; --card: #141C23; --ink: #E6EDF2; --ink-soft: #A3B2BD;
+      --ink-faint: #71818D; --rule: #263139; --rule-soft: #1C252C;
+      --accent: #F2933F; --accent-bg: #2A1B0E;
+      --good: #4FBB7C; --bad: #E4776E; --cyan: #4FC3DA;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0D1318; --card: #141C23; --ink: #E6EDF2; --ink-soft: #A3B2BD;
+    --ink-faint: #71818D; --rule: #263139; --rule-soft: #1C252C;
+    --accent: #F2933F; --accent-bg: #2A1B0E;
+    --good: #4FBB7C; --bad: #E4776E; --cyan: #4FC3DA;
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F5F7; --card: #FFFFFF; --ink: #131A22; --ink-soft: #4A5A67;
+    --ink-faint: #788894; --rule: #DBE2E7; --rule-soft: #E9EEF1;
+    --accent: #D4600B; --accent-bg: #FDF0E4;
+    --good: #157F43; --bad: #B3261E; --cyan: #0A7C95;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  /* ---------- masthead: compact, so print page 1 starts with content ---------- */
+  .masthead { display: flex; flex-direction: column; gap: 0.75rem; }
+  .doc-type {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font-size: clamp(1.7rem, 4vw, 2.35rem);
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .meta-line {
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem;
+    font-family: var(--mono); font-size: 0.76rem; color: var(--ink-faint);
+    border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+    padding: 0.6rem 0;
+  }
+  .meta-line b { color: var(--ink-soft); font-weight: 500; }
+
+  /* ---------- table of contents ---------- */
+  .toc {
+    background: var(--card); border: 1px solid var(--rule);
+    border-radius: var(--radius); padding: 1rem 1.2rem;
+    break-inside: avoid;
+  }
+  .toc-title {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.6rem;
+  }
+  .toc ol {
+    margin: 0; padding: 0; list-style: none;
+    columns: 2; column-gap: 2rem; font-size: 0.9rem;
+  }
+  .toc li { break-inside: avoid; padding: 0.13rem 0; }
+  .toc .n { font-family: var(--mono); color: var(--accent); font-size: 0.8rem; margin-right: 0.5rem; }
+  .toc a { color: var(--ink); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  @media (max-width: 620px) { .toc ol { columns: 1; } }
+
+  /* ---------- sections ---------- */
+  section { display: flex; flex-direction: column; gap: 0.95rem; }
+  h2 {
+    font-size: 1.3rem; font-weight: 700; letter-spacing: -0.015em; margin: 0;
+    padding-bottom: 0.45rem; border-bottom: 2px solid var(--accent);
+    display: flex; align-items: baseline; gap: 0.65rem;
+  }
+  h2 .num { font-family: var(--mono); font-size: 0.78rem; color: var(--accent); }
+  h3 {
+    font-size: 1.02rem; font-weight: 650; margin: 0.5rem 0 0; letter-spacing: -0.005em;
+    display: flex; align-items: baseline; gap: 0.5rem;
+  }
+  h3 .sub { font-family: var(--mono); font-size: 0.74rem; color: var(--ink-faint); }
+  h4 { font-size: 0.92rem; font-weight: 650; margin: 0.35rem 0 0; color: var(--ink-soft); }
+  p { margin: 0; max-width: var(--measure); }
+  ul, ol.body-list { margin: 0; padding-left: 1.15rem; max-width: var(--measure); display: flex; flex-direction: column; gap: 0.3rem; }
+
+  code {
+    font-family: var(--mono);
+    background: var(--rule-soft);
+    padding: 0.08em 0.32em;
+    border-radius: 2px;
+    font-size: 0.89em;
+  }
+
+  pre {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 0.9rem 1.05rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    margin: 0;
+    break-inside: avoid;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  pre.diagram { font-size: 0.68rem; line-height: 1.35; }
+
+  .formula {
+    background: var(--card); border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent); border-radius: var(--radius);
+    padding: 0.9rem 1.1rem; font-family: var(--mono); font-size: 0.85rem;
+    overflow-x: auto; line-height: 1.7; break-inside: avoid;
+  }
+  .formula .c { color: var(--ink-faint); }
+
+  /* ---------- tables ---------- */
+  .table-scroll {
+    overflow-x: auto; border: 1px solid var(--rule);
+    border-radius: var(--radius); background: var(--card); break-inside: avoid;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 0.855rem; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  thead th {
+    font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-faint);
+    background: var(--rule-soft); border-bottom: 1px solid var(--rule); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td code { white-space: nowrap; font-size: 0.87em; }
+  .nowrap, .num-col { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  /* ---------- callouts ---------- */
+  .note {
+    border-left: 3px solid var(--cyan); background: var(--card);
+    border-radius: var(--radius); padding: 0.8rem 1rem;
+    font-size: 0.9rem; color: var(--ink-soft); break-inside: avoid;
+    max-width: var(--measure);
+  }
+  .note strong { color: var(--ink); }
+  .note.critical { border-left-color: var(--bad); }
+  .note.rationale { border-left-color: var(--accent); }
+
+  .kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.75rem; }
+  .kv-item {
+    background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius);
+    padding: 0.7rem 0.85rem; break-inside: avoid;
+  }
+  .kv-item .k { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
+  .kv-item .v { font-size: 1.15rem; font-weight: 650; font-variant-numeric: tabular-nums; margin-top: 0.1rem; }
+  .kv-item .d { font-size: 0.8rem; color: var(--ink-soft); margin-top: 0.15rem; }
+
+  footer {
+    border-top: 1px solid var(--rule); padding-top: 1rem;
+    font-size: 0.82rem; color: var(--ink-faint);
+    display: flex; flex-direction: column; gap: 0.25rem;
+  }
+
+  /* ---------- print → PDF ---------- */
+  @page { margin: 14mm 13mm; }
+  @media print {
+    :root {
+      --paper: #FFFFFF; --card: #FFFFFF; --ink: #000000; --ink-soft: #2E2E2E;
+      --ink-faint: #575757; --rule: #B8B8B8; --rule-soft: #EDEDED;
+      --accent: #A64B08; --accent-bg: #F7EEE6;
+      --good: #0F5C31; --bad: #8C1E18; --cyan: #0A5A6B;
+    }
+    body { font-size: 9.6pt; line-height: 1.45; }
+    .wrap { max-width: none; padding: 0; gap: 1.15rem; }
+    h1 { font-size: 19pt; }
+    h2 { font-size: 12pt; page-break-after: avoid; margin-top: 0.2rem; }
+    h3, h4 { page-break-after: avoid; }
+    p, ul, ol { orphans: 3; widows: 3; }
+    pre, .formula, .table-scroll, .note, .toc, .kv-item { page-break-inside: avoid; }
+    pre.diagram { font-size: 6.4pt; }
+    table { font-size: 8pt; }
+    th, td { padding: 0.3rem 0.45rem; }
+    section { page-break-inside: auto; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="doc-type">Technical documentation</div>
+    <h1>Webcam Gaze Detection System</h1>
+    <div class="meta-line">
+      <span><b>Version:</b> 2026-07-21 · dataset schema v3</span>
+      <span><b>Platform:</b> Lenovo Legion R7000 ARP8 · Windows 11</span>
+      <span><b>Camera:</b> Realtek integrated, 1280×720 native</span>
+    </div>
+    <p>Complete technical reference: architecture, algorithms, data formats, API
+       surface, measured performance and failure modes. Companion documents —
+       <code>cheatsheet.html</code> (plain-English explainer), <code>ROADMAP.md</code>
+       (data strategy), <code>data/README.md</code> (column dictionary).</p>
+  </header>
+
+  <nav class="toc">
+    <div class="toc-title">Contents</div>
+    <ol>
+      <li><span class="n">01</span><a href="#s1">Overview</a></li>
+      <li><span class="n">02</span><a href="#s2">System architecture</a></li>
+      <li><span class="n">03</span><a href="#s3">Conventions &amp; coordinate systems</a></li>
+      <li><span class="n">04</span><a href="#s4">Algorithms</a></li>
+      <li><span class="n">05</span><a href="#s5">Data formats</a></li>
+      <li><span class="n">06</span><a href="#s6">API reference</a></li>
+      <li><span class="n">07</span><a href="#s7">Configuration reference</a></li>
+      <li><span class="n">08</span><a href="#s8">Verification methodology</a></li>
+      <li><span class="n">09</span><a href="#s9">Limitations &amp; failure modes</a></li>
+      <li><span class="n">10</span><a href="#s10">Operational procedures</a></li>
+    </ol>
+  </nav>
+
+  <!-- ============ 1 ============ -->
+  <section id="s1">
+    <h2><span class="num">01</span> Overview</h2>
+    <p>A gaze-tracking system that estimates where a user is looking on their screen
+       using <strong>only a standard laptop webcam</strong> — no infrared illuminators,
+       no depth sensor, no head-mounted hardware.</p>
+
+    <p>The system solves three problems in sequence:</p>
+    <ol class="body-list">
+      <li><strong>Where is the face, and where is it in 3D space?</strong> — MediaPipe landmarks + pinhole distance estimation.</li>
+      <li><strong>Which direction are the eyes pointing?</strong> — L2CS-Net gaze model.</li>
+      <li><strong>Which screen pixel does that direction correspond to <em>for this user</em>?</strong> — per-person polynomial calibration.</li>
+    </ol>
+    <p>A <strong>positioning gate</strong> constrains the user to a fixed region of space
+       so step 3 remains valid, and a <strong>self-improving data loop</strong> collects
+       labeled training samples during normal use.</p>
+
+    <h3>Measured performance</h3>
+    <div class="kv">
+      <div class="kv-item"><div class="k">Mean error</div><div class="v">2.0–2.4 cm</div><div class="d">On-screen miss distance</div></div>
+      <div class="kv-item"><div class="k">Best region</div><div class="v">0.4–1.5 cm</div><div class="d">Centre and upper screen</div></div>
+      <div class="kv-item"><div class="k">Worst region</div><div class="v">3.5–6.5 cm</div><div class="d">Corners</div></div>
+      <div class="kv-item"><div class="k">Frame rate</div><div class="v">8–15 fps</div><div class="d">CPU-bound on gaze inference</div></div>
+      <div class="kv-item"><div class="k">Calibration</div><div class="v">≈100 s</div><div class="d">86 s sweep + 14 s validation</div></div>
+      <div class="kv-item"><div class="k">Data yield</div><div class="v">≈500 / sweep</div><div class="d">Plus 100–200 per game</div></div>
+    </div>
+    <p class="note">For reference, commercial webcam-based eye trackers typically achieve
+       2–4 cm; dedicated IR hardware achieves under 1 cm.</p>
+  </section>
+
+  <!-- ============ 2 ============ -->
+  <section id="s2">
+    <h2><span class="num">02</span> System architecture</h2>
+
+<pre class="diagram"><code>┌─────────────────────────────────────────────────────────────────┐
+│ CAPTURE   cv2.VideoCapture(0) @ 1280x720 (sensor-native 16:9)   │
+│           cv2.flip(frame, 1) → mirror view                      │
+└───────────────────────────┬─────────────────────────────────────┘
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ PERCEPTION — MediaPipe FaceLandmarker (VIDEO mode)              │
+│   → 478 normalized landmarks + 4x4 transform matrix             │
+└──────────────┬───────────────────────────────┬──────────────────┘
+               ▼                               ▼
+┌──────────────────────────────┐  ┌────────────────────────────────┐
+│ POSITIONING GATE             │  │ FACE CROP                      │
+│  IPD (468↔473) → distance    │  │  bbox over all 478 landmarks   │
+│  nose (1) → centering        │  │  squared + padded 30%          │
+│  → zone GREEN/YELLOW/RED     │  │  → EMA-smoothed (α=0.3)        │
+└──────────────┬───────────────┘  └────────────────┬───────────────┘
+               │ gates everything                  ▼
+               │ downstream          ┌──────────────────────────────┐
+               │                     │ GAZE MODEL — L2CS-Net (ONNX) │
+               │                     │  448×448 → 2×90 bins         │
+               │                     │  → pitch, yaw (radians)      │
+               │                     └────────────────┬─────────────┘
+               │                                      ▼
+               │                     ┌──────────────────────────────┐
+               └────────────────────►│ CALIBRATION MAPPING          │
+                 (samples rejected   │  degree-3 polynomial + drift │
+                  when out of zone)  │  → screen (x, y) ∈ [0,1]²    │
+                                     └────────────────┬─────────────┘
+                                                      ▼
+                                     ┌──────────────────────────────┐
+                                     │ APPLICATIONS                 │
+                                     │  accuracy test / game /      │
+                                     │  live cursor / mouse control │
+                                     └──────────────────────────────┘</code></pre>
+
+    <h3>Module inventory</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Module</th><th>Type</th><th>Responsibility</th></tr></thead>
+        <tbody>
+          <tr><td><code>gaze_pipeline.py</code></td><td>library</td><td>Face detection, square smoothed crop, ONNX gaze inference</td></tr>
+          <tr><td><code>gaze_features.py</code></td><td>library</td><td>Per-frame extraction of all 32 measured features</td></tr>
+          <tr><td><code>positioning_gate.py</code></td><td>library</td><td>Distance + centering constraints, parking-sensor overlay</td></tr>
+          <tr><td><code>calibration_utils.py</code></td><td>library</td><td>Polynomial fit, robust refit, model I/O, dataset I/O</td></tr>
+          <tr><td><code>milestone1_face_mesh.py</code></td><td>demo</td><td>Landmark visualization</td></tr>
+          <tr><td><code>milestone2_eye_headpose.py</code></td><td>demo</td><td>Eye crops + head pose</td></tr>
+          <tr><td><code>milestone3_gaze_model.py</code></td><td>demo</td><td>Raw (uncalibrated) gaze arrow</td></tr>
+          <tr><td><code>milestone4_calibration.py</code></td><td>tool</td><td>Calibration; also exports shared session primitives</td></tr>
+          <tr><td><code>milestone5_positioning.py</code></td><td>demo</td><td>Positioning gate + focal calibration</td></tr>
+          <tr><td><code>milestone6_test_accuracy.py</code></td><td>tool</td><td>Quantitative accuracy measurement</td></tr>
+          <tr><td><code>milestone7_gaze_game.py</code></td><td>app</td><td>Gamified test, data collection, aim assist, retraining</td></tr>
+          <tr><td><code>milestone8_live_cursor.py</code></td><td>app</td><td>Live gaze cursor, optional OS mouse control</td></tr>
+          <tr><td><code>inspect_dataset.py</code></td><td>tool</td><td>Human-readable dataset summary</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note"><strong>Dependency note.</strong> Milestones 6, 7 and 8 import session
+      primitives (<code>FrameReader</code>, <code>phase_a_positioning</code>,
+      <code>measure_drift</code>, <code>CANVAS_W/H</code>) from
+      <code>milestone4_calibration.py</code>. Milestone 4 is therefore a de-facto shared
+      runtime module, not merely a script.</div>
+  </section>
+
+  <!-- ============ 3 ============ -->
+  <section id="s3">
+    <h2><span class="num">03</span> Conventions &amp; coordinate systems</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Space</th><th>Definition</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Frame</strong></td><td>Camera pixels, origin top-left, 1280×720, <strong>horizontally mirrored</strong></td></tr>
+          <tr><td><strong>Landmark</strong></td><td>MediaPipe normalized [0,1] relative to frame</td></tr>
+          <tr><td><strong>Canvas</strong></td><td>Fixed 1280×720 render surface, stretched to display by OpenCV fullscreen</td></tr>
+          <tr><td><strong>Screen-normalized</strong></td><td>(x, y) ∈ [0,1]², origin top-left — the calibration output space</td></tr>
+          <tr><td><strong>Physical</strong></td><td>Centimetres, from Windows <code>GetDeviceCaps(HORZSIZE/VERTSIZE)</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Canvas ↔ physical scale</strong> (development display, 34.4 × 19.4 cm):
+       37.2 px/cm horizontally, 37.1 px/cm vertically — near-identical, so pixel radii
+       translate to centimetres uniformly.</p>
+    <p><strong>Angles:</strong> gaze pitch/yaw are in <strong>radians</strong> everywhere
+       after decoding. Positive yaw = subject looking to their right in the mirrored view;
+       positive pitch = looking up. Head pose is in <strong>degrees</strong>.</p>
+  </section>
+
+  <!-- ============ 4 ============ -->
+  <section id="s4">
+    <h2><span class="num">04</span> Algorithms</h2>
+
+    <h3>4.1 <span class="sub">Face and iris landmarks</span></h3>
+    <p>MediaPipe <strong>FaceLandmarker</strong> (Tasks API, <code>face_landmarker.task</code>)
+       in <code>RunningMode.VIDEO</code>, <code>num_faces=1</code>, detection/tracking
+       confidence 0.5. Video mode requires monotonically increasing timestamps; the pipeline
+       synthesizes them as <code>frame_idx × (1000/30)</code> ms.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Index</th><th>Anatomy</th><th>Consumer</th></tr></thead>
+        <tbody>
+          <tr><td class="nowrap">468</td><td>Left iris center</td><td>Distance (IPD), iris features</td></tr>
+          <tr><td class="nowrap">473</td><td>Right iris center</td><td>Distance (IPD), iris features</td></tr>
+          <tr><td class="nowrap">1</td><td>Nose tip</td><td>Centering check</td></tr>
+          <tr><td class="nowrap">33, 133, 362, 263</td><td>Eye corners</td><td>Iris ratio, EAR</td></tr>
+          <tr><td class="nowrap">234, 454, 10, 152</td><td>Face extents</td><td>Face width / height</td></tr>
+          <tr><td class="nowrap">0–477</td><td>All</td><td>Gaze-model crop bbox</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note critical"><strong>Capture resolution is functionally significant.</strong>
+      The sensor is natively 16:9 at 1280×720. Requesting 640×480 causes the driver to
+      center-crop to 4:3, narrowing the effective horizontal field of view. This invalidates
+      the assumed focal length (biasing all distance readings <em>closer</em> than reality)
+      and halves the pixel count across the iris.</div>
+
+    <h3>4.2 <span class="sub">Head pose</span></h3>
+    <p>Enabled via <code>output_facial_transformation_matrixes=True</code>. The 4×4 matrix is
+       computed by MediaPipe from its full internal 3D face model. Rotation extracted with SciPy:</p>
+<pre><code>rotation = np.array(transformation_matrix)[:3, :3]
+pitch, yaw, roll = Rotation.from_matrix(rotation).as_euler('xyz', degrees=True)
+tx, ty, tz = np.array(transformation_matrix)[:3, 3]</code></pre>
+    <div class="note rationale"><strong>Rationale.</strong> A hand-rolled 6-point
+      <code>solvePnP</code> was replaced because exact anatomical 2D↔3D correspondence is easy
+      to get subtly wrong on a mirrored frame, which produced errors on the order of 60° yaw /
+      170° roll while the subject faced forward.</div>
+
+    <h3>4.3 <span class="sub">Distance estimation (monocular, known-size)</span></h3>
+    <p>The same principle a camera-only vehicle uses to judge distance: project an object of
+       known real-world size and measure its apparent size. Our known object is the
+       <strong>interpupillary distance (IPD)</strong>.</p>
+    <div class="formula">
+distance_cm = focal_px · REAL_IPD_CM / ipd_px
+
+<span class="c">ipd_px = ‖(landmark₄₇₃ − landmark₄₆₈) ⊙ (W, H)‖₂</span>
+    </div>
+    <p><strong>Focal length resolution order:</strong></p>
+    <ol class="body-list">
+      <li><strong>Measured (preferred)</strong> — <code>calibrate_focal()</code> at a known
+          distance: <code>focal = ipd_px · known_dist_cm / REAL_IPD_CM</code>, persisted to
+          <code>models/camera_focal.json</code>, linearly rescaled if capture width changes.
+          Measured value on this machine: <strong>1073.4 px</strong>.</li>
+      <li><strong>Estimated fallback</strong> — <code>focal = W / (2·tan(HFOV/2))</code>.
+          At W = 1280, HFOV = 60° → <strong>1108.5 px</strong>.</li>
+    </ol>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>ipd_px</th><th class="num-col">90</th><th class="num-col">110</th><th class="num-col">130</th><th class="num-col">150</th></tr></thead>
+        <tbody><tr><td>distance_cm <span style="color:var(--ink-faint)">(fallback focal)</span></td><td class="num-col">77.6</td><td class="num-col">63.5</td><td class="num-col">53.7</td><td class="num-col">46.6</td></tr></tbody>
+      </table>
+    </div>
+    <h4>Error sources</h4>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Source</th><th>Magnitude</th><th>Mitigation</th></tr></thead>
+        <tbody>
+          <tr><td>Individual IPD variation (±0.4 cm on 6.3)</td><td class="nowrap">≈ ±6% bias</td><td>Wide tolerance band; per-user focal calibration</td></tr>
+          <tr><td>Unpublished true camera FOV</td><td>Systematic scale</td><td><code>c</code>-key focal calibration at measured 50 cm</td></tr>
+          <tr><td>Head yaw foreshortening IPD</td><td>Reads farther</td><td>Centering constraint limits extreme yaw</td></tr>
+          <tr><td>Landmark jitter</td><td class="nowrap">±1–2 px → ±1 cm</td><td>Band is 20 cm wide; not threshold-sensitive</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Absolute accuracy is deliberately secondary — the gate enforces a <strong>band</strong>,
+       and any systematic bias shifts that band consistently for a given user.</p>
+
+    <h3>4.4 <span class="sub">Positioning gate</span></h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Constant</th><th class="num-col">Value</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>MIN_DIST_CM</code> / <code>MAX_DIST_CM</code></td><td class="num-col">45 / 65</td><td>Allowed distance band</td></tr>
+          <tr><td><code>WARN_MARGIN_CM</code></td><td class="num-col">5</td><td>Yellow zone inside each green edge</td></tr>
+          <tr><td><code>CENTER_TOL</code></td><td class="num-col">0.12</td><td>Max nose deviation, fraction of frame</td></tr>
+          <tr><td><code>REAL_IPD_CM</code></td><td class="num-col">6.3</td><td>Assumed pupil separation</td></tr>
+          <tr><td><code>ASSUMED_HFOV_DEG</code></td><td class="num-col">60</td><td>Fallback FOV</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="formula">
+in_zone = (MIN ≤ d ≤ MAX) ∧ (|dx| ≤ TOL) ∧ (|dy| ≤ TOL)
+RED     = ¬in_zone
+YELLOW  = in_zone ∧ (near a distance edge ∨ |offset| &gt; 0.7·TOL)
+GREEN   = otherwise
+    </div>
+    <p><code>evaluate(landmarks, frame_shape)</code> returns a dict with
+       <code>distance_cm</code>, signed <code>dx</code>/<code>dy</code>,
+       <code>distance_ok</code>, <code>centered</code>, <code>in_zone</code>,
+       <code>zone</code>, and guidance <code>messages</code>. Returns <code>None</code>
+       when IPD is degenerate (&lt; 1 px).</p>
+    <p><strong>Overlay.</strong> Parking-sensor display: discrete level segments spanning
+       30–80 cm in 5 cm steps (nearest at bottom), allowed band drawn green with yellow warn
+       margins, active segment highlighted; a centre-tolerance box with nose marker;
+       directional guidance; and a border flash whose frequency scales 2 → 8 Hz with the
+       magnitude of violation.</p>
+    <div class="note critical"><strong>Enforcement contract.</strong> Every consumer discards
+      gaze data while <code>in_zone</code> is false. This is the mechanism by which the
+      constraint buys accuracy — out-of-position samples are never recorded, so they cannot
+      contaminate the fit.</div>
+
+    <h3>4.5 <span class="sub">Gaze estimation</span></h3>
+    <ul>
+      <li><strong>Model:</strong> L2CS-Net trained on Gaze360, exported to ONNX, executed on
+          <code>CPUExecutionProvider</code> with <code>intra_op_num_threads = 4</code>.</li>
+      <li><strong>Preprocessing:</strong> BGR→RGB, resize 448×448, scale to [0,1], ImageNet
+          mean/std normalization, HWC→CHW, batch dimension.</li>
+      <li><strong>Decoding:</strong> two 90-bin logit vectors → softmax → expectation over bin
+          indices → <code>deg = Σ(pᵢ·i)·4 − 180</code> → radians.</li>
+    </ul>
+    <div class="note critical"><strong>Critical implementation detail.</strong> The ONNX graph
+      emits <code>(yaw_bins, pitch_bins)</code> — <strong>not</strong> <code>(pitch, yaw)</code>.
+      Handled in <code>gaze_pipeline._predict_gaze_radians()</code>. Reversing it silently
+      transposes the gaze axes and was a genuine historical defect.</div>
+    <p><strong>Crop stabilization.</strong> The bounding box over all landmarks is converted to
+       a <strong>square</strong> (side = max extent × 1.3) and smoothed across frames:
+       <code>bₜ = α·b_measured + (1−α)·bₜ₋₁</code>, α = 0.3. Squareness preserves aspect ratio
+       through the 448×448 resize; smoothing prevents crop jitter appearing as gaze jitter.
+       State is module-level and must be cleared via <code>reset_bbox_smoothing()</code>.</p>
+
+    <h3>4.6 <span class="sub">Calibration</span></h3>
+    <h4>Phase A — positioning gate</h4>
+    <p>Blocks until <code>zone == "GREEN"</code> is held continuously for
+       <code>HOLD_GREEN_SECS = 2.0</code>; any RED/YELLOW frame resets the timer.</p>
+
+    <h4>Phase B — smooth-pursuit sweep</h4>
+    <p>A dot traverses a polyline at constant speed while samples are recorded every frame.
+       Path geometry (<code>build_pursuit_path</code>), margin <code>m = 0.05</code>:</p>
+    <ol class="body-list">
+      <li><strong>Snake:</strong> 5 horizontal rows at <code>y ∈ linspace(m, 1−m, 5)</code>, alternating direction.</li>
+      <li><strong>Perimeter:</strong> right edge ascent → top edge → left edge descent → bottom edge.</li>
+      <li><strong>Diagonal:</strong> bottom-right → top-left through the centre.</li>
+    </ol>
+    <p>Total: 15 vertices, path length 10.27 screen-units, duration
+       <code>10.27 / 0.12 = 86 s</code>.</p>
+    <div class="note rationale"><strong>Design rationale.</strong> A pure snake only touches
+      each edge instantaneously at a turn, and the settle-time filter then discards the samples
+      immediately following that turn — leaving corners with effectively no training data, so
+      the polynomial <strong>extrapolated</strong> there. This produced reproducible corner
+      errors up to 6.2 cm. The perimeter pass gives every edge a dedicated slow traversal
+      approached from two directions; measured top-right error fell from 6.2 cm to 0.7 cm.</div>
+    <h4>Sample admission</h4>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Filter</th><th>Threshold</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td>Positioning gate in-zone</td><td><code>in_zone</code></td><td>Constraint enforcement</td></tr>
+          <tr><td>Time since direction change</td><td class="nowrap">≥ 0.3 s</td><td>Eye lags the dot after a turn</td></tr>
+          <tr><td>Face detected, crop non-empty</td><td>—</td><td>Validity</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Fit.</strong> <code>PolynomialFeatures(degree=3)</code> over the 2 gaze features
+       yields <strong>10 terms</strong> — <code>[1, p, y, p², py, y², p³, p²y, py², y³]</code> —
+       feeding two independent <code>LinearRegression</code> models (x and y).</p>
+    <p><strong>Robust refit.</strong> Fit → residual norms → retain samples within
+       <code>median + 2.5·1.4826·MAD</code> → refit on survivors (only if ≥ 60 remain).
+       The 1.4826 factor converts MAD to a normal-consistent σ estimate. Removes blinks and
+       glances away.</p>
+    <div class="note rationale"><strong>Why degree 3.</strong> Accuracy degrades when looking
+      downward because the eyelid occludes the pupil, a nonlinearity a quadratic cannot
+      represent. Raising the degree reduced worst-corner error from 8.4 cm to 4.1 cm. With
+      400+ samples and 10 terms, overfitting risk is low.</div>
+
+    <h4>Rest interval</h4>
+    <p>A 5 s pause precedes validation. Validating immediately after 86 s of continuous pursuit
+       measurably inflated error (18.3% vs 9.8% of screen) due to ocular fatigue.</p>
+
+    <h4>Phase C — held-out validation</h4>
+    <p>5 static points (centre + 4 mid-quadrants), each 1.2 s dwell + 1.5 s sampling,
+       median-aggregated. Absent from the training path, so the resulting error is a genuine
+       generalization estimate — unlike <code>fit_error_normalized</code>, which is
+       training-set error and optimistic.</p>
+
+    <h3>4.7 <span class="sub">Drift correction</span></h3>
+    <p><strong>Problem.</strong> The mapping is conditioned on the exact posture held during
+       calibration. A 1–2° difference in head pitch at a later session displaces <em>every</em>
+       prediction by a near-constant offset — diagnosable in the accuracy report as error
+       vectors that are all parallel and equal in length.</p>
+    <div class="formula">
+drift = predict(median_pitch, median_yaw) − (0.5, 0.5)
+corrected(x, y) = clamp₀¹( predict(x, y) − drift )
+    </div>
+    <p>Run at the start of milestones 6/7/8 by sampling gaze at a single known centre point.
+       This is the standard procedure used by commercial eye trackers.</p>
+    <div class="note"><strong>Caveat.</strong> Because drift is measured at screen centre, the
+      centre test point in milestone 6 becomes partially self-fulfilling — evaluate quality
+      primarily from edge and corner points.</div>
+
+    <h3>4.8 <span class="sub">Aim assist</span></h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Zone</th><th class="num-col">Radius</th><th class="num-col">Physical</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td>Snap</td><td class="num-col">≤ 130 px</td><td class="num-col">3.5 cm</td><td><code>pull = 1.0</code> — cursor locks to target centre</td></tr>
+          <tr><td>Magnet</td><td class="num-col">≤ 330 px</td><td class="num-col">8.9 cm</td><td><code>pull = (330 − d)/(330 − 130)</code>, linear fade</td></tr>
+          <tr><td>None</td><td class="num-col">&gt; 330 px</td><td class="num-col">—</td><td>Raw cursor</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><code>assisted = raw + (target − raw) · pull</code>. The visible target ring is only
+       70 px (1.9 cm); the magnet field is <strong>deliberately not rendered</strong>
+       (revealable with <code>d</code>), so assistance is imperceptible to an observer.</p>
+    <div class="note critical"><strong>Sizing constraint.</strong> <code>ASSIST_RADIUS</code>
+      must exceed the model's typical error (4–6 cm ≈ 150–220 px) or the attractor is never
+      entered. The original implementation used 160 px with a 65% maximum pull — it could
+      neither reach the cursor nor fully land it, which is why it appeared non-functional.</div>
+
+    <h3>4.9 <span class="sub">Fixation detection &amp; data integrity</span></h3>
+    <p><strong>Threat model.</strong> Aim assist moves the cursor onto the target regardless of
+       where the user is actually looking. Deriving training labels from the <em>assisted</em>
+       cursor would let the assist manufacture its own ground truth, poisoning the dataset.</p>
+    <p><strong>Countermeasure.</strong> Labeling consults <strong>raw gaze only</strong>.
+       A sample is admitted when <code>is_fixating()</code> holds:</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Condition</th><th class="num-col">Threshold</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>≥ 3 samples spanning the hold window</td><td class="num-col">0.25 s</td><td>Sufficient evidence at 8–15 fps</td></tr>
+          <tr><td>Spatial spread</td><td class="num-col">≤ 120 px (3.2 cm)</td><td>Distinguishes fixation from saccade</td></tr>
+          <tr><td>Centroid distance to target</td><td class="num-col">≤ 420 px (11.3 cm)</td><td>Rejects looking elsewhere entirely</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note rationale"><strong>Why stability rather than proximity.</strong> Gating on
+      closeness to the target would admit only samples where the model is <em>already correct</em>,
+      from which nothing can be learned. Rows where the model is currently wrong but the eye is
+      demonstrably fixating carry the corrective signal.</div>
+
+    <h3>4.10 <span class="sub">Incremental retraining</span></h3>
+    <ol class="body-list">
+      <li>Append the session's fixation samples to <code>data/gaze_samples.csv</code>.</li>
+      <li>Load the complete accumulated dataset.</li>
+      <li>If <code>len ≥ 200</code>, refit with <code>robust_fit_samples</code> at the existing degree.</li>
+      <li>Carry forward <code>validation_error</code> and <code>position_constraints</code>;
+          record <code>trained_on</code> source counts; persist.</li>
+    </ol>
+    <div class="note critical"><strong>Known ceiling.</strong> Pooling sessions without
+      session-aware features degraded training error to 17.7% once eight sessions were mixed:
+      the same <code>(gaze_pitch, gaze_yaw)</code> legitimately maps to different screen points
+      across postures, and a model that cannot see which session a row came from averages
+      contradictory evidence. Resolving this requires position-aware features — the reason the
+      32-column schema exists.</div>
+  </section>
+
+  <!-- ============ 5 ============ -->
+  <section id="s5">
+    <h2><span class="num">05</span> Data formats</h2>
+
+    <h3>5.1 <span class="sub">data/gaze_samples.csv — schema v3, 39 columns</span></h3>
+    <p>Column order is chosen for a human opening the file in a spreadsheet:</p>
+<pre><code> 1-3   source, user, session_id      what this row is
+ 4-5   target_x, target_y            THE ANSWER (ground truth)
+ 6-37  the 32 measured features      what the camera saw
+38-39  timestamp, schema_version     when / layout version</code></pre>
+
+    <h4>Group A — MEASURED features (columns 6–37, "user data")</h4>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Prefix</th><th>Columns</th><th>Units</th><th>Signal</th></tr></thead>
+        <tbody>
+          <tr><td><code>gaze_</code></td><td><code>gaze_pitch</code>, <code>gaze_yaw</code></td><td>radians</td><td>L2CS-Net output — strongest single predictor</td></tr>
+          <tr><td><code>head_</code></td><td><code>head_pitch/yaw/roll</code></td><td>degrees</td><td>Head rotation from transformation matrix</td></tr>
+          <tr><td><code>head_</code></td><td><code>head_tx/ty/tz</code></td><td>matrix units</td><td>Head translation (tz ≈ camera distance)</td></tr>
+          <tr><td><code>iris_</code></td><td><code>iris_{left,right}_{x,y}</code></td><td>normalized</td><td>Absolute iris position</td></tr>
+          <tr><td><code>iris_</code></td><td><code>iris_*_ratio_{x,y}</code></td><td>ratio</td><td><strong>Iris position within the eye box</strong> — head-invariant eye direction</td></tr>
+          <tr><td><code>eye_</code></td><td><code>eye_{left,right}_{inner,outer}_{x,y}</code></td><td>normalized</td><td>Eye corner geometry</td></tr>
+          <tr><td><code>ear_</code></td><td><code>ear_left</code>, <code>ear_right</code></td><td>ratio</td><td>Eye aspect ratio: ~0.3 open, ~0.1 closed</td></tr>
+          <tr><td><code>face_</code></td><td><code>face_width</code>, <code>face_height</code>, <code>ipd_px</code></td><td>norm / px</td><td>Scale cues covarying with distance</td></tr>
+          <tr><td><code>pos_</code></td><td><code>pos_distance_cm</code>, <code>pos_face_dx/dy</code></td><td>cm / fraction</td><td>Gate-derived position and framing</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Group B — LABEL (columns 4–5, "actual data")</h4>
+    <p><code>target_x</code>, <code>target_y</code> — float [0,1], the on-screen stimulus the
+       user was looking at. Named <code>target_*</code> deliberately: this is the coordinate
+       <strong>the program rendered</strong>, never a model output. No prediction is stored
+       anywhere in this file.</p>
+
+    <h4>Group C — META (columns 1–3 and 38–39)</h4>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Column</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>source</code></td><td><code>milestone4_pursuit</code> | <code>milestone7_game</code> — named for the producing script so the CSV is self-describing</td></tr>
+          <tr><td><code>user</code></td><td>Identity, from <code>GAZE_USER</code> env var (default <code>"default"</code>)</td></tr>
+          <tr><td><code>session_id</code></td><td>Per-process ID, <code>YYYYMMDD-HHMMSS</code> — enables session-aware training</td></tr>
+          <tr><td><code>timestamp</code></td><td>ISO-8601 batch write time</td></tr>
+          <tr><td><code>schema_version</code></td><td>Layout the row was written under (1, 2 or 3)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note rationale"><strong>Why session_id matters.</strong> Head posture differs
+      between sittings, so the same gaze angles legitimately map to different screen points
+      across sessions. Without this column a pooled fit averages contradictory evidence. It
+      permits per-session normalization, session-held-out validation, and drift modelling.</div>
+
+    <h4>Derived feature definitions</h4>
+    <p><strong>Iris ratio.</strong> Raw iris pixels confound eyeball rotation with head
+       position. The ratio projects the iris onto the outer→inner corner axis:</p>
+    <div class="formula">
+x_ratio = ((iris − outer) · (inner − outer)) / ‖inner − outer‖²
+y_ratio = (iris_y − midline_y) / ‖inner − outer‖
+    </div>
+    <p>giving 0 at the outer corner and 1 at the inner corner regardless of where the face sits
+       in frame.</p>
+    <p><strong>EAR.</strong> Standard 6-point formula
+       <code>(‖p₂−p₆‖ + ‖p₃−p₅‖) / (2‖p₁−p₄‖)</code> over landmarks
+       (33, 160, 158, 133, 153, 144) left and (362, 385, 387, 263, 373, 380) right.</p>
+
+    <h4>Schema migration</h4>
+    <p><code>_migrate_dataset()</code> runs on every write and handles three cases in place:</p>
+    <ol class="body-list">
+      <li><strong>v1 (6-col) / v2 (9-col) → v3</strong> — remaps <code>pitch→gaze_pitch</code>,
+          <code>yaw→gaze_yaw</code>, <code>x→target_x</code>, <code>y→target_y</code>,
+          <code>distance_cm→pos_distance_cm</code>; tags rows <code>user="legacy"</code>.</li>
+      <li><strong>v3 with old column order → current order</strong> — same columns, reordered.</li>
+      <li><strong>Short source labels → script-named labels</strong>.</li>
+    </ol>
+    <p>Unknown layouts are left untouched rather than risk corruption.</p>
+    <p><strong>Self-documentation.</strong> <code>write_data_dictionary()</code> regenerates
+       <code>data/README.md</code> alongside the CSV on every write, so a plain-English
+       explanation of every column always sits next to the data and cannot go stale.
+       <code>inspect_dataset.py</code> prints a runtime summary: row counts by source, users,
+       sessions, feature coverage, and a 3×3 screen-coverage grid.</p>
+
+    <h3>5.2 <span class="sub">models/calibration_model.pkl</span></h3>
+<pre><code>{
+  "poly":       PolynomialFeatures,   # fitted transformer
+  "reg_x":      LinearRegression,     # screen-x regressor
+  "reg_y":      LinearRegression,     # screen-y regressor
+  "degree":     int,
+  "fit_error_normalized": float,      # training error (optimistic)
+  "validation_error":     float|None, # held-out error (authoritative)
+  "position_constraints": {"min_dist_cm", "max_dist_cm", "center_tol"},
+  "trained_on": dict,                 # {source: count}, after retraining
+}</code></pre>
+
+    <h3>5.3 <span class="sub">models/camera_focal.json</span></h3>
+<pre><code>{"focal_px": 1073.4275140253867, "frame_w": 1280}</code></pre>
+  </section>
+
+  <!-- ============ 6 ============ -->
+  <section id="s6">
+    <h2><span class="num">06</span> API reference</h2>
+
+    <h3>gaze_pipeline</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Function</th><th>Signature</th><th>Returns</th></tr></thead>
+        <tbody>
+          <tr><td><code>detect_face</code></td><td><code>(frame, landmarker, frame_idx)</code></td><td><code>(landmarks, bbox, transform_matrix)</code> or <code>(None, None, None)</code></td></tr>
+          <tr><td><code>predict_gaze_from_crop</code></td><td><code>(face_crop_bgr)</code></td><td><code>(pitch_rad, yaw_rad)</code></td></tr>
+          <tr><td><code>get_gaze_reading</code></td><td><code>(frame, landmarker, frame_idx)</code></td><td><code>(pitch, yaw, bbox)</code></td></tr>
+          <tr><td><code>get_smoothed_square_crop</code></td><td><code>(frame, landmarks, padding_ratio=0.3)</code></td><td><code>(crop, bbox)</code></td></tr>
+          <tr><td><code>reset_bbox_smoothing</code></td><td><code>()</code></td><td>— clears module state</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>gaze_features</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Function</th><th>Signature</th><th>Returns</th></tr></thead>
+        <tbody>
+          <tr><td><code>extract_features</code></td><td><code>(landmarks, frame_shape, gaze_pitch, gaze_yaw, transform_matrix, gate_status)</code></td><td>dict of all 32 features</td></tr>
+          <tr><td><code>eye_aspect_ratio</code></td><td><code>(landmarks, pts, w, h)</code></td><td>float EAR</td></tr>
+          <tr><td><code>iris_ratio</code></td><td><code>(landmarks, iris_idx, outer_idx, inner_idx, w, h)</code></td><td><code>(x_ratio, y_ratio)</code></td></tr>
+          <tr><td><code>head_pose_from_matrix</code></td><td><code>(matrix)</code></td><td><code>(pitch, yaw, roll, tx, ty, tz)</code></td></tr>
+          <tr><td><code>FEATURE_COLUMNS</code></td><td>constant</td><td>Canonical 32-column order</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>positioning_gate.PositioningGate</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Method</th><th>Signature</th><th>Returns</th></tr></thead>
+        <tbody>
+          <tr><td><code>evaluate</code></td><td><code>(landmarks, frame_shape)</code></td><td>status dict or <code>None</code></td></tr>
+          <tr><td><code>draw_overlay</code></td><td><code>(frame, status)</code></td><td>annotated frame (in place)</td></tr>
+          <tr><td><code>focal_px</code></td><td><code>(frame_w)</code></td><td>float</td></tr>
+          <tr><td><code>calibrate_focal</code></td><td><code>(ipd_px, frame_w, known_dist_cm=50.0)</code></td><td>float; persists JSON</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>calibration_utils</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Function</th><th>Signature</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>fit_calibration</code></td><td><code>(samples, degree=2)</code></td><td>Callers pass <code>degree=3</code></td></tr>
+          <tr><td><code>robust_fit_samples</code></td><td><code>(samples, degree=3, mad_factor=2.5, min_keep=60)</code></td><td>→ <code>(model, n_dropped)</code></td></tr>
+          <tr><td><code>apply_calibration</code></td><td><code>(model, pitch, yaw)</code></td><td>→ <code>(x, y)</code> clamped to [0,1]</td></tr>
+          <tr><td><code>append_dataset</code></td><td><code>(samples, source, path, user, session_id)</code></td><td>Feature dicts + <code>target_x/y</code>; auto-migrates</td></tr>
+          <tr><td><code>load_dataset</code></td><td><code>(path)</code></td><td>→ 4-tuples for the current 2-feature fit</td></tr>
+          <tr><td><code>load_dataset_full</code></td><td><code>(path)</code></td><td>→ list of dicts, all 39 columns</td></tr>
+          <tr><td><code>write_data_dictionary</code></td><td><code>(path)</code></td><td>Regenerates <code>data/README.md</code></td></tr>
+          <tr><td><code>save_calibration</code> / <code>load_calibration</code></td><td><code>(model[, path])</code></td><td>Pickle I/O</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>milestone4_calibration <span class="sub">shared session primitives</span></h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Symbol</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>FrameReader(cap, gate)</code></td><td><code>.read(with_gaze=True, with_features=False)</code> → <code>{status, pitch, yaw, features}</code></td></tr>
+          <tr><td><code>phase_a_positioning(reader, window)</code></td><td>Blocking gate; <code>True</code> on success</td></tr>
+          <tr><td><code>measure_drift(reader, window, model)</code></td><td>→ <code>(dx, dy)</code> or <code>None</code></td></tr>
+          <tr><td><code>CANVAS_W</code>, <code>CANVAS_H</code></td><td>Canvas dimensions (1280 × 720)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 7 ============ -->
+  <section id="s7">
+    <h2><span class="num">07</span> Configuration reference</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Constant</th><th>Module</th><th class="num-col">Default</th><th>Effect of increasing</th></tr></thead>
+        <tbody>
+          <tr><td><code>MIN_DIST_CM</code> / <code>MAX_DIST_CM</code></td><td>positioning_gate</td><td class="num-col">45 / 65</td><td>Wider band: easier to stay in zone, weaker constraint</td></tr>
+          <tr><td><code>WARN_MARGIN_CM</code></td><td>positioning_gate</td><td class="num-col">5</td><td>Earlier yellow warning</td></tr>
+          <tr><td><code>CENTER_TOL</code></td><td>positioning_gate</td><td class="num-col">0.12</td><td>Looser centering</td></tr>
+          <tr><td><code>REAL_IPD_CM</code></td><td>positioning_gate</td><td class="num-col">6.3</td><td>Scales all distances proportionally</td></tr>
+          <tr><td><code>ASSUMED_HFOV_DEG</code></td><td>positioning_gate</td><td class="num-col">60</td><td>Larger → shorter reported distances</td></tr>
+          <tr><td><code>BBOX_SMOOTHING</code></td><td>gaze_pipeline</td><td class="num-col">0.3</td><td>More responsive, more jitter</td></tr>
+          <tr><td><code>PURSUIT_SPEED</code></td><td>milestone4</td><td class="num-col">0.12</td><td>Faster sweep, fewer samples</td></tr>
+          <tr><td><code>PURSUIT_ROWS</code> / <code>PURSUIT_MARGIN</code></td><td>milestone4</td><td class="num-col">5 / 0.05</td><td>Denser rows / edge clearance</td></tr>
+          <tr><td><code>SETTLE_TIME</code></td><td>milestone4</td><td class="num-col">0.3</td><td>Stricter post-turn rejection</td></tr>
+          <tr><td><code>POLY_DEGREE</code></td><td>milestone4</td><td class="num-col">3</td><td>More flexible; overfitting risk if data sparse</td></tr>
+          <tr><td><code>OUTLIER_MAD_FACTOR</code></td><td>milestone4</td><td class="num-col">2.5</td><td>More permissive outlier retention</td></tr>
+          <tr><td><code>HOLD_GREEN_SECS</code></td><td>milestone4</td><td class="num-col">2.0</td><td>Longer stability requirement</td></tr>
+          <tr><td><code>TARGET_RADIUS</code></td><td>milestone7</td><td class="num-col">70 px</td><td>Larger visible hit ring</td></tr>
+          <tr><td><code>ASSIST_RADIUS</code> / <code>SNAP_RADIUS</code></td><td>milestone7</td><td class="num-col">330 / 130</td><td>Stronger, wider assistance</td></tr>
+          <tr><td><code>FIXATION_MIN_HOLD</code></td><td>milestone7</td><td class="num-col">0.25 s</td><td>Stricter fixation evidence</td></tr>
+          <tr><td><code>FIXATION_STABILITY_PX</code></td><td>milestone7</td><td class="num-col">120 px</td><td>More permissive stability</td></tr>
+          <tr><td><code>FIXATION_MAX_RAW_DIST</code></td><td>milestone7</td><td class="num-col">420 px</td><td>Admits samples further from target</td></tr>
+          <tr><td><code>RETRAIN_MIN_SAMPLES</code></td><td>milestone7</td><td class="num-col">200</td><td>Later first retrain</td></tr>
+          <tr><td><code>GAZE_SMOOTHING</code></td><td>milestone7</td><td class="num-col">0.25</td><td>More responsive cursor, more jitter</td></tr>
+          <tr><td><code>TRAIL_SECONDS</code></td><td>milestone8</td><td class="num-col">1.5</td><td>Longer cursor trail</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 8 ============ -->
+  <section id="s8">
+    <h2><span class="num">08</span> Verification methodology</h2>
+    <p><code>milestone6_test_accuracy.py</code> measures a 3×3 grid at <strong>5% / 50% / 95%</strong>
+       of each axis — including true corners, the hardest extrapolation region. Points are
+       disjoint from both the training path and Phase C validation points.</p>
+    <p>Per point: 1.2 s dwell (discarded) + 1.5 s sampling (median-aggregated) →
+       drift-corrected prediction → Euclidean error converted to centimetres via the
+       Windows-reported physical display size.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th class="num-col">Mean error</th><th>Classification</th></tr></thead>
+        <tbody>
+          <tr><td class="num-col">&lt; 1.5 cm</td><td>Excellent — approaching commercial systems</td></tr>
+          <tr><td class="num-col">&lt; 3.0 cm</td><td>Good — reliable for button-sized targets</td></tr>
+          <tr><td class="num-col">&lt; 5.5 cm</td><td>Fair — regions and quadrants only</td></tr>
+          <tr><td class="num-col">≥ 5.5 cm</td><td>Poor — recalibration required</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The report additionally diagnoses <strong>error topology</strong>: edge-dominant error
+       indicates insufficient polynomial flexibility or edge coverage; centre-dominant error
+       indicates postural change since calibration; uniformly parallel error vectors indicate
+       session drift.</p>
+  </section>
+
+  <!-- ============ 9 ============ -->
+  <section id="s9">
+    <h2><span class="num">09</span> Limitations &amp; failure modes</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Limitation</th><th>Mechanism</th><th>Mitigation</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Posture-dependent accuracy</td><td>Mapping conditioned on calibration pose</td><td>Positioning gate + drift correction</td><td>Mitigated, not eliminated</td></tr>
+          <tr><td>Downward gaze degradation</td><td>Eyelid occludes pupil</td><td>Degree-3 polynomial</td><td>Partially mitigated</td></tr>
+          <tr><td>Corner extrapolation</td><td>Sparse edge training data</td><td>Perimeter sweep pass</td><td>Resolved (6.2 → 0.7 cm)</td></tr>
+          <tr><td>Per-user IPD variance</td><td>Fixed 6.3 cm assumption</td><td>Optional focal calibration</td><td>Bounded (~±6%)</td></tr>
+          <tr><td>CPU-bound throughput</td><td>ONNX inference dominates frame time</td><td>EMA smoothing masks latency</td><td>8–15 fps; ~0.25 s cursor lag</td></tr>
+          <tr><td>Fixed 1280×720 canvas</td><td>Relies on OpenCV fullscreen stretching</td><td>Per-machine <code>CANVAS_W/H</code> override</td><td>Environment-dependent</td></tr>
+          <tr><td>Model expressiveness ceiling</td><td>Fit consumes only <code>(pitch, yaw)</code></td><td>Position-aware features now collected</td><td>Schema ready; model pending</td></tr>
+          <tr><td>Single-user model</td><td>Calibration is per person</td><td>Retrain per user</td><td>By design</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note critical"><strong>Known environment issue.</strong> On systems whose
+      OpenCV build does not stretch fullscreen windows, the 1280×720 canvas renders centred at
+      native size and stimulus dots do not reach the display edges. Remedy: set
+      <code>CANVAS_W, CANVAS_H</code> to that machine's resolution. Note that rendering at high
+      resolutions (e.g. 2560×1440) measurably reduces frame rate and therefore sample yield.</div>
+  </section>
+
+  <!-- ============ 10 ============ -->
+  <section id="s10">
+    <h2><span class="num">10</span> Operational procedures</h2>
+
+    <h3>Initial setup <span class="sub">per user, per machine</span></h3>
+<pre><code>$env:GAZE_USER = "arsi"              # tag rows with the operator
+python milestone5_positioning.py     # verify tracking; 'c' at a measured 50 cm
+python milestone4_calibration.py     # ~100 s; writes calibration_model.pkl
+python milestone6_test_accuracy.py   # establish baseline accuracy</code></pre>
+
+    <h3>Routine use</h3>
+<pre><code>python milestone7_gaze_game.py       # collects data, retrains automatically
+python milestone8_live_cursor.py     # 'm' toggles OS mouse control
+python milestone6_test_accuracy.py   # re-measure periodically
+python inspect_dataset.py            # what is in the dataset right now</code></pre>
+
+    <h3>Diagnostics</h3>
+<pre><code># Dataset composition
+python -c "from calibration_utils import load_dataset; s,c = load_dataset(); print(len(s), c)"
+
+# Saved model metadata
+python -c "from calibration_utils import load_calibration; m = load_calibration(); \
+print({k: m[k] for k in m if k not in ('poly','reg_x','reg_y')})"</code></pre>
+
+    <h3>Interpreting failures</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Symptom</th><th>Probable cause</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td>All errors parallel and equal</td><td>Session drift</td><td>Automatic correction; recalibrate if severe</td></tr>
+          <tr><td>Corners bad, centre good</td><td>Insufficient edge data / degree too low</td><td>Recalibrate; verify perimeter pass runs</td></tr>
+          <tr><td>Centre bad, edges good</td><td>Posture changed since calibration</td><td>Recalibrate in the intended working posture</td></tr>
+          <tr><td>Errors large and random</td><td>Poor lighting or tracking loss</td><td>Improve illumination; check milestone 1 stability</td></tr>
+          <tr><td>Distance reading implausible</td><td>Wrong focal length or capture resolution</td><td>Re-run focal calibration; confirm 1280×720</td></tr>
+          <tr><td>Assist appears inactive</td><td>Cursor never enters magnet radius</td><td>Verify <code>ASSIST_RADIUS</code> exceeds current mean error</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <div>Webcam Gaze Detection System · Technical Documentation · 2026-07-21</div>
+    <div>Plain-English companion: <code>cheatsheet.html</code> · Column dictionary: <code>data/README.md</code> · Data strategy: <code>ROADMAP.md</code></div>
+    <div>To save as PDF: Ctrl+P → Destination “Save as PDF” → Background graphics on.</div>
+  </footer>
+
+</div>

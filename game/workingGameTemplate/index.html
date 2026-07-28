@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Flood Response AI Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- ============ INTRO / GREETING OVERLAY ============ -->
+<div id="intro-overlay">
+  <div id="intro-card">
+    <span class="eyebrow">AI Quest &middot; Flood Response</span>
+    <h1>Monsoon Flood Response</h1>
+    <p>Hello — in this game you're assigned to finding an answer to the monsoon flooding that happens all around Pakistan, with the help of AI.</p>
+    <p>You'll need to collect relevant data, clean that data by removing anything garbage or redundant, and then train your AI.</p>
+    <p class="intro-cta-line">Click Start to begin.</p>
+    <button id="start-btn">Start</button>
+  </div>
+</div>
+
+<div class="app">
+  <header>
+    <span class="eyebrow">AI Quest &middot; Flood Response</span>
+    <h1>Monsoon Flood Response</h1>
+  </header>
+
+  <!-- ============ PROCESS STEPPER ============ -->
+  <ol id="stepper">
+    <li class="step" data-stage="collect"><span class="step-num">1</span><span class="step-label">Collect Data</span></li>
+    <li class="step" data-stage="clean"><span class="step-num">2</span><span class="step-label">Clean Data</span></li>
+    <li class="step" data-stage="train"><span class="step-num">3</span><span class="step-label">Train AI</span></li>
+    <li class="step" data-stage="implement"><span class="step-num">4</span><span class="step-label">Implement</span></li>
+  </ol>
+
+  <main>
+    <!-- ============ PROCESS 1: COLLECT DATA ============ -->
+    <section id="stage-collect" class="stage active">
+      <div class="stage-intro">
+        <h2>Process 1 &middot; Collecting Data</h2>
+        <p class="stage-desc">This is the first step — collect any and all data that is remotely related to the monsoon flooding.</p>
+      </div>
+
+      <div class="stage-body">
+        <section id="grid-panel" aria-label="Explorable field of data sources">
+          <div id="world"></div>
+          <div id="minimap"><div id="minimap-thumb"></div></div>
+          <div class="pan-hint" id="pan-hint">← drag to explore →</div>
+        </section>
+
+        <aside id="sidebar" aria-label="Collected data log">
+          <div id="progress-label">
+            <span>COLLECTED</span>
+            <span id="progress-count">0 / 0</span>
+          </div>
+          <div id="progress-track"><div id="progress-fill"></div></div>
+          <h2 id="log-title">Working Dataset</h2>
+          <ul id="collected-list">
+            <li id="empty-hint" class="plain">No data collected yet.</li>
+          </ul>
+          <div id="status-line"></div>
+        </aside>
+      </div>
+
+      <div class="stage-nav">
+        <button id="to-clean-btn" class="proceed-btn" disabled>Proceed to Cleaning →</button>
+      </div>
+    </section>
+
+    <!-- ============ PROCESS 2: CLEAN DATA ============ -->
+    <section id="stage-clean" class="stage">
+      <div class="stage-intro">
+        <h2>Process 2 &middot; Cleaning the Data</h2>
+        <p class="stage-desc">Now that the data is collected, clean it — keep only what's relevant, and cut anything garbage or redundant.</p>
+      </div>
+
+      <div class="stage-body single-panel">
+        <div id="clean-panel">
+          <p id="clean-summary" class="hint"></p>
+          <div id="clean-grid"></div>
+        </div>
+      </div>
+
+      <div class="stage-nav">
+        <button id="to-train-btn" class="proceed-btn" disabled>Proceed to Training →</button>
+      </div>
+    </section>
+
+    <!-- ============ PROCESS 3: TRAIN THE AI ============ -->
+    <section id="stage-train" class="stage">
+      <div class="stage-intro">
+        <h2>Process 3 &middot; Train the AI</h2>
+        <p class="stage-desc">Now that the data is clean and accurate, we can train our AI.</p>
+      </div>
+
+      <div class="stage-body single-panel">
+        <div id="train-panel">
+          <p id="train-summary" class="hint"></p>
+          <button id="train-btn" class="proceed-btn">Train Model</button>
+          <div id="train-result"></div>
+        </div>
+      </div>
+
+      <div class="stage-nav">
+        <button id="to-implement-btn" class="proceed-btn" disabled>Proceed to Implementation →</button>
+      </div>
+    </section>
+
+    <!-- ============ PROCESS 4: IMPLEMENT ============ -->
+    <section id="stage-implement" class="stage">
+      <div class="stage-intro">
+        <h2>Process 4 &middot; Implement</h2>
+        <p class="stage-desc">Now implement the AI to find a solution to the monsoon flooding problem.</p>
+      </div>
+
+      <div class="stage-body single-panel">
+        <div id="implement-panel">
+          <div id="implement-content"></div>
+        </div>
+      </div>
+
+      <div class="stage-nav">
+        <button id="back-to-clean-btn" class="proceed-btn ghost">← Back to Cleaning</button>
+        <button id="restart-btn" class="proceed-btn">Restart Game</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="main.js"></script>
+<script src="gaze-client.js"></script>
+</body>
+</html>

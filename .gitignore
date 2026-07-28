@@ -1,0 +1,32 @@
+# Python virtual environment (recreate with: python -m venv gaze_env && pip install -r requirements.txt)
+gaze-detection/gaze_env/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OS / archive junk
+.DS_Store
+Thumbs.db
+**/__MACOSX/
+*.zip
+
+# Claude / editor local
+.claude/
+**/.claude/
+CLAUDE.md
+
+# Model weights (91 MB each) — kept out of git; see gaze-detection/SETUP_INSTRUCTIONS.md
+gaze-detection/models/l2cs_gaze360.onnx
+gaze-detection/models/L2CSNet_gaze360.pkl
+gaze-detection/face_landmarker.task
+
+# Editors
+.vscode/
+.idea/
+
+# Temp
+*.tmp
+*.log

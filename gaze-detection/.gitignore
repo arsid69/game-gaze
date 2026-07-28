@@ -1,0 +1,29 @@
+# --- Python virtual environment (1.2 GB, never commit) ---
+gaze_env/
+__pycache__/
+*.pyc
+
+# --- Large model weights (91 MB each) — see SETUP_INSTRUCTIONS.md to obtain ---
+models/l2cs_gaze360.onnx
+models/L2CSNet_gaze360.pkl
+
+# --- Downloadable runtime assets (documented in SETUP_INSTRUCTIONS.md) ---
+face_landmarker.task
+
+# --- Third-party game, controlled externally, not part of this project ---
+Marathon-run/
+
+# --- Installers / machine-specific junk ---
+vs_BuildTools.exe
+*.exe
+*.log
+
+# --- Editor / OS ---
+.claude/
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# --- Personal images not part of the project ---
+WhatsApp Image*.jpeg

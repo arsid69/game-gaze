@@ -1,0 +1,684 @@
+<title>Gaze Dataset — Every Column Explained</title>
+
+<style>
+  :root {
+    --paper:#F3F5F7; --card:#FFFFFF; --ink:#131A22; --ink-soft:#4A5A67;
+    --ink-faint:#788894; --rule:#DBE2E7; --rule-soft:#E9EEF1;
+    --accent:#D4600B; --accent-bg:#FDF0E4;
+    --label:#157F43; --label-bg:#E7F4ED;
+    --meta:#6B4FA8; --meta-bg:#F0EBF9;
+    --bad:#B3261E; --cyan:#0A7C95;
+    --sans: ui-sans-serif,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono: ui-monospace,"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+    --measure:72ch; --radius:3px;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --paper:#0D1318; --card:#141C23; --ink:#E6EDF2; --ink-soft:#A3B2BD;
+    --ink-faint:#71818D; --rule:#263139; --rule-soft:#1C252C;
+    --accent:#F2933F; --accent-bg:#2A1B0E;
+    --label:#4FBB7C; --label-bg:#12261A;
+    --meta:#B49BE8; --meta-bg:#1E1830;
+    --bad:#E4776E; --cyan:#4FC3DA;}}
+  :root[data-theme="dark"]{
+    --paper:#0D1318; --card:#141C23; --ink:#E6EDF2; --ink-soft:#A3B2BD;
+    --ink-faint:#71818D; --rule:#263139; --rule-soft:#1C252C;
+    --accent:#F2933F; --accent-bg:#2A1B0E;
+    --label:#4FBB7C; --label-bg:#12261A;
+    --meta:#B49BE8; --meta-bg:#1E1830;
+    --bad:#E4776E; --cyan:#4FC3DA;}
+  :root[data-theme="light"]{
+    --paper:#F3F5F7; --card:#FFFFFF; --ink:#131A22; --ink-soft:#4A5A67;
+    --ink-faint:#788894; --rule:#DBE2E7; --rule-soft:#E9EEF1;
+    --accent:#D4600B; --accent-bg:#FDF0E4;
+    --label:#157F43; --label-bg:#E7F4ED;
+    --meta:#6B4FA8; --meta-bg:#F0EBF9;
+    --bad:#B3261E; --cyan:#0A7C95;}
+
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+       font-size:15.5px;line-height:1.58;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1020px;margin:0 auto;padding:2.5rem 1.5rem 4rem;
+        display:flex;flex-direction:column;gap:2.2rem;}
+
+  .doc-type{font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;
+            text-transform:uppercase;color:var(--accent);}
+  h1{font-size:clamp(1.8rem,4.5vw,2.4rem);line-height:1.08;font-weight:700;
+     letter-spacing:-.025em;margin:0;text-wrap:balance;}
+  .meta-line{display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;font-family:var(--mono);
+             font-size:.75rem;color:var(--ink-faint);border-top:1px solid var(--rule);
+             border-bottom:1px solid var(--rule);padding:.55rem 0;}
+  .meta-line b{color:var(--ink-soft);font-weight:500;}
+
+  section{display:flex;flex-direction:column;gap:.85rem;}
+  h2{font-size:1.22rem;font-weight:700;letter-spacing:-.015em;margin:0;
+     padding-bottom:.4rem;border-bottom:2px solid var(--accent);
+     display:flex;align-items:baseline;gap:.6rem;}
+  h2 .n{font-family:var(--mono);font-size:.74rem;color:var(--accent);}
+  h3{font-size:1rem;font-weight:650;margin:.5rem 0 0;}
+  p{margin:0;max-width:var(--measure);}
+  .lead{color:var(--ink-soft);}
+  ul,ol.body{margin:0;padding-left:1.15rem;max-width:var(--measure);
+             display:flex;flex-direction:column;gap:.28rem;}
+
+  code{font-family:var(--mono);background:var(--rule-soft);padding:.08em .32em;
+       border-radius:2px;font-size:.89em;}
+  pre{background:var(--card);border:1px solid var(--rule);border-radius:var(--radius);
+      padding:.8rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.78rem;
+      line-height:1.5;margin:0;break-inside:avoid;}
+  pre code{background:none;padding:0;font-size:inherit;}
+
+  .table-scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:var(--radius);
+                background:var(--card);break-inside:avoid;}
+  table{border-collapse:collapse;width:100%;font-size:.84rem;}
+  th,td{text-align:left;padding:.45rem .7rem;border-bottom:1px solid var(--rule-soft);
+        vertical-align:top;}
+  thead th{font-family:var(--mono);font-size:.63rem;letter-spacing:.1em;
+           text-transform:uppercase;color:var(--ink-faint);background:var(--rule-soft);
+           border-bottom:1px solid var(--rule);white-space:nowrap;}
+  tbody tr:last-child td{border-bottom:none;}
+  td code{white-space:nowrap;}
+  .num{white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .idx{font-family:var(--mono);color:var(--ink-faint);font-size:.78rem;}
+
+  /* column detail card */
+  .col{background:var(--card);border:1px solid var(--rule);border-radius:var(--radius);
+       padding:.9rem 1.05rem;display:flex;flex-direction:column;gap:.6rem;
+       break-inside:avoid;}
+  .col-head{display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap;
+            border-bottom:1px solid var(--rule-soft);padding-bottom:.45rem;}
+  .col-name{font-family:var(--mono);font-size:.95rem;font-weight:600;color:var(--accent);}
+  .col-meta{font-family:var(--mono);font-size:.72rem;color:var(--ink-faint);}
+  .col-val{font-family:var(--mono);font-size:.72rem;background:var(--accent-bg);
+           color:var(--accent);padding:.1rem .4rem;border-radius:2px;margin-left:auto;}
+  .wwh{display:flex;flex-direction:column;gap:.45rem;}
+  .wwh > div{display:grid;grid-template-columns:3.6rem 1fr;gap:.8rem;align-items:start;}
+  .wwh .k{font-family:var(--mono);font-size:.64rem;letter-spacing:.09em;
+          text-transform:uppercase;color:var(--ink-faint);padding-top:.22rem;}
+  .wwh .v{font-size:.9rem;}
+  .wwh .v code{font-size:.85em;}
+  @media (max-width:560px){.wwh > div{grid-template-columns:1fr;gap:.1rem;}
+                           .wwh .k{padding-top:0;}}
+
+  .grouphead{display:flex;align-items:center;gap:.8rem;margin-top:.4rem;}
+  .gtag{font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;
+        text-transform:uppercase;padding:.22rem .55rem;border-radius:2px;white-space:nowrap;}
+  .gtag.feat{background:var(--accent-bg);color:var(--accent);}
+  .gtag.lab{background:var(--label-bg);color:var(--label);}
+  .gtag.met{background:var(--meta-bg);color:var(--meta);}
+  .gtitle{font-size:1.02rem;font-weight:660;}
+  .grule{flex:1;height:1px;background:var(--rule);}
+
+  .note{border-left:3px solid var(--cyan);background:var(--card);border-radius:var(--radius);
+        padding:.75rem 1rem;font-size:.89rem;color:var(--ink-soft);break-inside:avoid;
+        max-width:var(--measure);}
+  .note strong{color:var(--ink);}
+  .note.why{border-left-color:var(--accent);}
+  .note.warn{border-left-color:var(--bad);}
+
+  footer{border-top:1px solid var(--rule);padding-top:1rem;font-size:.82rem;
+         color:var(--ink-faint);display:flex;flex-direction:column;gap:.25rem;}
+
+  @page{margin:14mm 13mm;}
+  @media print{
+    :root{--paper:#FFF;--card:#FFF;--ink:#000;--ink-soft:#2E2E2E;--ink-faint:#575757;
+          --rule:#B8B8B8;--rule-soft:#EDEDED;--accent:#A64B08;--accent-bg:#F7EEE6;
+          --label:#0F5C31;--label-bg:#EDF5F0;--meta:#4A3577;--meta-bg:#F0EDF7;
+          --bad:#8C1E18;--cyan:#0A5A6B;}
+    body{font-size:9.5pt;line-height:1.42;}
+    .wrap{max-width:none;padding:0;gap:1.1rem;}
+    h1{font-size:19pt;} h2{font-size:11.5pt;page-break-after:avoid;}
+    h3,.grouphead{page-break-after:avoid;}
+    .col,pre,.table-scroll,.note{page-break-inside:avoid;}
+    table{font-size:7.8pt;} th,td{padding:.26rem .4rem;}
+    a{color:inherit;text-decoration:none;}
+  }
+</style>
+
+<div class="wrap">
+
+<header style="display:flex;flex-direction:column;gap:.7rem">
+  <div class="doc-type">Dataset reference · every column, every landmark</div>
+  <h1>gaze_samples.csv — all 39 columns explained</h1>
+  <div class="meta-line">
+    <span><b>File:</b> data/gaze_samples.csv</span>
+    <span><b>Schema:</b> v3, 39 columns</span>
+    <span><b>Rows at time of writing:</b> 6,373</span>
+    <span><b>Written by:</b> milestone 4 &amp; 7 only</span>
+  </div>
+  <p class="lead">Every column: what it is, why it exists, how it is calculated, and which
+     file and function produces it. Example values throughout are taken from one real row
+     of the dataset, shown in the orange chips.</p>
+</header>
+
+<!-- ============ 1 ============ -->
+<section>
+  <h2><span class="n">01</span> What one row is</h2>
+  <p>One row = <strong>one video frame</strong> in which the program knew exactly where the
+     person was looking, because the program itself had drawn the dot they were told to
+     look at.</p>
+<pre><code>MEASURED (what the camera saw)   ──▶   LABEL (where the dot was)
+   32 feature columns                     target_x, target_y
+
+                    a supervised learning pair</code></pre>
+  <div class="note warn"><strong>Nothing in this file is a prediction.</strong> The label is
+    the stimulus coordinate the program rendered, so it is known exactly. If a model output
+    were ever stored here, every accuracy figure computed from the file would be circular
+    and meaningless.</div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section>
+  <h2><span class="n">02</span> How a row is produced — the file chain</h2>
+<pre><code>1. cv2.VideoCapture(0)                    frame, 1280x720, mirrored
+        │
+2. gaze_pipeline.detect_face()            MediaPipe FaceLandmarker
+        │                                 → 478 landmarks
+        │                                 → 4x4 facial transformation matrix
+        │                                 → square, EMA-smoothed face crop
+        ├──────────────┐
+        ▼              ▼
+3. positioning_    4. gaze_pipeline.predict_gaze_from_crop()
+   gate.evaluate()    ONNX L2CS-Net → gaze_pitch, gaze_yaw
+   → distance,        (only runs when the gate says you are in position)
+     dx, dy
+        └──────────────┤
+                       ▼
+5. gaze_features.extract_features(landmarks, frame_shape, gaze_pitch,
+                                  gaze_yaw, transform_matrix, gate_status)
+   → dict of all 32 MEASURED columns
+                       │
+6. caller adds the label:
+   milestone4_calibration.py  phase_b_pursuit()  row["target_x"/"target_y"] = moving dot
+   milestone7_gaze_game.py    play()             row["target_x"/"target_y"] = game target
+                       │
+7. calibration_utils.append_dataset(rows, source)
+   → adds source / user / session_id / timestamp / schema_version
+   → writes the CSV line</code></pre>
+
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>File</th><th>Produces</th></tr></thead>
+      <tbody>
+        <tr><td><code>gaze_pipeline.py</code></td><td>Landmarks, transformation matrix, face crop, <code>gaze_pitch</code>, <code>gaze_yaw</code></td></tr>
+        <tr><td><code>positioning_gate.py</code></td><td><code>pos_distance_cm</code>, <code>pos_face_dx</code>, <code>pos_face_dy</code></td></tr>
+        <tr><td><code>gaze_features.py</code></td><td>All 32 measured columns assembled into one dict</td></tr>
+        <tr><td><code>milestone4_calibration.py</code></td><td><code>target_x</code>, <code>target_y</code> from the moving dot</td></tr>
+        <tr><td><code>milestone7_gaze_game.py</code></td><td><code>target_x</code>, <code>target_y</code> from the game target</td></tr>
+        <tr><td><code>calibration_utils.py</code></td><td>The 5 metadata columns; writes the file</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section>
+  <h2><span class="n">03</span> The 19 landmarks used</h2>
+  <p>MediaPipe returns 478 points. Nineteen are read individually; the rest are used only
+     collectively, as the bounding box for the gaze model's face crop.</p>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Index</th><th>Anatomy</th><th>Columns it feeds</th></tr></thead>
+      <tbody>
+        <tr><td class="num"><strong>468</strong></td><td>Left iris centre</td><td><code>iris_left_x/y</code>, <code>iris_left_ratio_*</code>, <code>ipd_px</code>, <code>pos_distance_cm</code></td></tr>
+        <tr><td class="num"><strong>473</strong></td><td>Right iris centre</td><td><code>iris_right_x/y</code>, <code>iris_right_ratio_*</code>, <code>ipd_px</code>, <code>pos_distance_cm</code></td></tr>
+        <tr><td class="num"><strong>33</strong></td><td>Left eye, outer (temple) corner</td><td><code>eye_left_outer_x/y</code>, ratio axis, EAR p₁</td></tr>
+        <tr><td class="num"><strong>133</strong></td><td>Left eye, inner (nose) corner</td><td><code>eye_left_inner_x/y</code>, ratio axis, EAR p₄</td></tr>
+        <tr><td class="num"><strong>362</strong></td><td>Right eye, inner (nose) corner</td><td><code>eye_right_inner_x/y</code>, ratio axis, EAR p₁</td></tr>
+        <tr><td class="num"><strong>263</strong></td><td>Right eye, outer (temple) corner</td><td><code>eye_right_outer_x/y</code>, ratio axis, EAR p₄</td></tr>
+        <tr><td class="num">160, 144</td><td>Left eye, upper/lower lid pair 1</td><td><code>ear_left</code></td></tr>
+        <tr><td class="num">158, 153</td><td>Left eye, upper/lower lid pair 2</td><td><code>ear_left</code></td></tr>
+        <tr><td class="num">385, 380</td><td>Right eye, upper/lower lid pair 1</td><td><code>ear_right</code></td></tr>
+        <tr><td class="num">387, 373</td><td>Right eye, upper/lower lid pair 2</td><td><code>ear_right</code></td></tr>
+        <tr><td class="num"><strong>1</strong></td><td>Nose tip</td><td><code>pos_face_dx</code>, <code>pos_face_dy</code></td></tr>
+        <tr><td class="num">234 / 454</td><td>Left / right cheek edge</td><td><code>face_width</code></td></tr>
+        <tr><td class="num">10 / 152</td><td>Forehead top / chin bottom</td><td><code>face_height</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note"><strong>Coordinates.</strong> MediaPipe landmarks are normalized to
+    <code>0–1</code> of the frame. <code>x = 0.5</code> is the horizontal centre. To get pixels,
+    multiply x by 1280 and y by 720. The frame is <strong>mirrored</strong>, so “left” means the
+    left side of the image as you see it.</div>
+</section>
+
+<!-- ============ GROUP: META HEAD ============ -->
+<section>
+  <div class="grouphead">
+    <span class="gtag met">Columns 1–3 · Metadata</span>
+    <span class="gtitle">Who and what produced this row</span>
+    <span class="grule"></span>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">01</span><span class="col-name">source</span>
+      <span class="col-meta">string</span><span class="col-val">milestone7_game</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">Which script and activity created the row: <code>milestone4_pursuit</code> (following the moving calibration dot) or <code>milestone7_game</code> (fixating a game target).</div></div>
+      <div><div class="k">Why</div><div class="v">The two activities have different characteristics — pursuit is continuous motion across the whole screen, game rows are static fixations at scattered points. Being able to train or evaluate on one only is essential.</div></div>
+      <div><div class="k">How</div><div class="v">Passed as a constant by the caller: <code>SOURCE_PURSUIT</code> / <code>SOURCE_GAME</code>.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>calibration_utils.py</code> → constants; written by <code>append_dataset()</code></div></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">02</span><span class="col-name">user</span>
+      <span class="col-meta">string</span><span class="col-val">asif</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">Who was sitting in front of the camera.</div></div>
+      <div><div class="k">Why</div><div class="v">Calibration is per person — eye spacing, face shape and seating height all differ. Mixing two people's rows into one fit produces a model that suits neither. This column keeps them separable.</div></div>
+      <div><div class="k">How</div><div class="v">Read from the <code>GAZE_USER</code> environment variable at import time; falls back to <code>"default"</code>. Set with <code>$env:GAZE_USER = "name"</code> before launching.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>calibration_utils.py</code> → <code>CURRENT_USER</code></div></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">03</span><span class="col-name">session_id</span>
+      <span class="col-meta">YYYYMMDD-HHMMSS</span><span class="col-val">20260721-110510</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">One identifier per program run. Every row from a single sitting shares it.</div></div>
+      <div><div class="k">Why</div><div class="v"><strong>The most important metadata column.</strong> Nobody sits down in exactly the same posture twice, so the same gaze angles legitimately map to different screen points across sessions. Without this column a pooled fit averages contradictory evidence — measured: training error rose to 17.7% once eight sessions were mixed. It also enables session-held-out validation, which is the only honest way to estimate real-world accuracy.</div></div>
+      <div><div class="k">How</div><div class="v"><code>datetime.now().strftime("%Y%m%d-%H%M%S")</code> evaluated once when the module is imported.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>calibration_utils.py</code> → <code>SESSION_ID</code></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GROUP: LABEL ============ -->
+<section>
+  <div class="grouphead">
+    <span class="gtag lab">Columns 4–5 · Label</span>
+    <span class="gtitle">The ground truth — what the model must learn to output</span>
+    <span class="grule"></span>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">04–05</span><span class="col-name">target_x, target_y</span>
+      <span class="col-meta">float, 0–1</span><span class="col-val">0.788274, 0.670046</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">Where the dot was on screen when this frame was captured. <code>0,0</code> = top-left, <code>1,1</code> = bottom-right, <code>0.5,0.5</code> = dead centre. The example row's dot was 79% across and 67% down.</div></div>
+      <div><div class="k">Why</div><div class="v">This is the answer the model is trained to produce from the 32 measured columns. Normalized rather than in pixels so it means the same on any screen size or resolution.</div></div>
+      <div><div class="k">How</div><div class="v">Not measured at all — the program <em>chose</em> this position and drew a dot there, so it is exact.<br>
+        · <strong>milestone 4:</strong> the moving dot's position along the pursuit path, sampled every frame.<br>
+        · <strong>milestone 7:</strong> the static target's position, recorded only while the raw gaze is confirmed to be fixating.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>milestone4_calibration.py</code> → <code>phase_b_pursuit()</code><br><code>milestone7_gaze_game.py</code> → <code>play()</code></div></div>
+    </div>
+  </div>
+
+  <div class="note why"><strong>Why some points are deliberately never recorded.</strong> The 5
+    validation dots at the end of calibration and the 9 test dots in milestone 6 are excluded from
+    this file on purpose. They are the exam paper — training on them would make every reported
+    accuracy figure a lie.</div>
+</section>
+
+<!-- ============ GROUP: GAZE ============ -->
+<section>
+  <div class="grouphead">
+    <span class="gtag feat">Columns 6–7 · Feature</span>
+    <span class="gtitle">Gaze angles — the strongest single signal</span>
+    <span class="grule"></span>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">06–07</span><span class="col-name">gaze_pitch, gaze_yaw</span>
+      <span class="col-meta">float, radians</span><span class="col-val">−0.283851, −0.232315</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">Which direction the eyes are pointing. Pitch = up/down, yaw = left/right. The example values are −16.3° and −13.3°.</div></div>
+      <div><div class="k">Why</div><div class="v">The only column produced by a <strong>trained neural network</strong> rather than geometry — L2CS-Net, trained on the Gaze360 dataset of thousands of faces. It carries most of the predictive power; every other feature is context that helps interpret it.</div></div>
+      <div><div class="k">How</div><div class="v">A square face crop (padded 30%, EMA-smoothed across frames) is resized to 448×448, scaled to 0–1 and normalized by ImageNet mean/std, then run through the ONNX model. It emits <strong>two 90-bin distributions</strong> rather than two numbers. Each is softmaxed and reduced to one angle by taking the expectation over the bins:
+        <br><code>deg = Σ(pᵢ × i) × 4 − 180</code>, then converted to radians.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>gaze_pipeline.py</code> → <code>_predict_gaze_radians()</code>, called via <code>predict_gaze_from_crop()</code>. Model file: <code>models/l2cs_gaze360.onnx</code>.</div></div>
+    </div>
+  </div>
+  <div class="note warn"><strong>Output order trap.</strong> The ONNX graph emits
+    <code>(yaw_bins, pitch_bins)</code> — <em>not</em> pitch first. Reversing it silently transposes
+    the gaze axes and was a real defect in this project's history. Handled inside
+    <code>_predict_gaze_radians()</code>; do not "fix" it back.</div>
+  <div class="note"><strong>Blank in some rows.</strong> These two are the only feature columns
+    that can be empty: the gaze model is only run while the positioning gate reports you in
+    position, so out-of-zone frames have no angles. Such rows are not saved anyway.</div>
+</section>
+
+<!-- ============ GROUP: HEAD ============ -->
+<section>
+  <div class="grouphead">
+    <span class="gtag feat">Columns 8–13 · Feature</span>
+    <span class="gtitle">Head pose — rotation and position in 3D</span>
+    <span class="grule"></span>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">08–10</span><span class="col-name">head_pitch, head_yaw, head_roll</span>
+      <span class="col-meta">float, degrees</span><span class="col-val">3.53, −1.15, 4.18</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">How the head is turned. <strong>Pitch</strong> = nodding yes, <strong>yaw</strong> = shaking no, <strong>roll</strong> = ear toward shoulder. The example head was almost straight: tilted down 3.5°, rotated 1.2°, tilted sideways 4.2°.</div></div>
+      <div><div class="k">Why</div><div class="v">The same eye angle lands on a different screen point depending on which way the head faces. Recording head pose separately lets a model tell "eyes moved" apart from "head moved" — the two produce identical iris pixel shifts but mean different things.</div></div>
+      <div><div class="k">How</div><div class="v">MediaPipe fits its full internal 3D face model and returns a <strong>4×4 transformation matrix</strong>. The top-left 3×3 block is the rotation; SciPy decomposes it:
+        <br><code>Rotation.from_matrix(m[:3,:3]).as_euler('xyz', degrees=True)</code></div></div>
+      <div><div class="k">Where</div><div class="v"><code>gaze_features.py</code> → <code>head_pose_from_matrix()</code>. Matrix supplied by <code>gaze_pipeline.detect_face()</code>, which requires <code>output_facial_transformation_matrixes=True</code> on the landmarker.</div></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">11–13</span><span class="col-name">head_tx, head_ty, head_tz</span>
+      <span class="col-meta">float, matrix units</span><span class="col-val">−1.34, 1.06, −35.72</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">Where the head sits in space relative to the camera. <code>tz</code> is depth — negative means in front of the camera, and its magnitude tracks distance.</div></div>
+      <div><div class="k">Why</div><div class="v">Position, not just orientation. Sitting higher, lower or off to one side changes the geometry between eye and screen even when the head angle is identical.</div></div>
+      <div><div class="k">How</div><div class="v">The right-hand column of the same 4×4 matrix: <code>m[:3, 3]</code>. No further processing.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>gaze_features.py</code> → <code>head_pose_from_matrix()</code></div></div>
+    </div>
+  </div>
+  <div class="note"><strong>Units.</strong> <code>head_t*</code> are in MediaPipe's own model
+    units, not centimetres. <code>tz ≈ −35.7</code> here while the gate independently measured
+    59.1 cm — they correlate but are not the same scale. Use <code>pos_distance_cm</code> when you
+    need real centimetres.</div>
+  <div class="note warn"><strong>These can be blank</strong> if SciPy is not installed or the
+    matrix is unavailable — <code>head_pose_from_matrix()</code> returns six <code>None</code>s
+    rather than crashing.</div>
+</section>
+
+<!-- ============ GROUP: IRIS RAW ============ -->
+<section>
+  <div class="grouphead">
+    <span class="gtag feat">Columns 14–17 · Feature</span>
+    <span class="gtitle">Iris positions in the image</span>
+    <span class="grule"></span>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">14–17</span>
+      <span class="col-name">iris_left_x/y, iris_right_x/y</span>
+      <span class="col-meta">float, 0–1</span><span class="col-val">0.4368, 0.4145, 0.5259, 0.4019</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">Where each iris centre sits in the camera image. The example's left iris was 44% across the frame, the right 53%.</div></div>
+      <div><div class="k">Why</div><div class="v">The raw observation the eye features are built from. On its own it is <em>ambiguous</em> — moving your head shifts these numbers exactly as much as moving your eyes does, which is why the ratio columns exist. Kept because absolute position still carries information about framing.</div></div>
+      <div><div class="k">How</div><div class="v">Read directly, no computation: <code>landmarks[468].x/.y</code> and <code>landmarks[473].x/.y</code>. MediaPipe's refined iris model resolves these to sub-pixel precision.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>gaze_features.py</code> → <code>extract_features()</code></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GROUP: IRIS RATIO ============ -->
+<section>
+  <div class="grouphead">
+    <span class="gtag feat">Columns 18–21 · Feature</span>
+    <span class="gtitle">Iris ratio — the head-invariant eye direction</span>
+    <span class="grule"></span>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">18–21</span>
+      <span class="col-name">iris_left_ratio_x/y, iris_right_ratio_x/y</span>
+      <span class="col-meta">float, ~0–1 / ~±0.2</span><span class="col-val">0.5590, −0.0442, 0.3822, −0.0490</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">Where the iris sits <em>inside its own eye</em>. <code>0</code> = at the outer (temple) corner, <code>1</code> = at the inner (nose) corner, <code>0.5</code> = centred. <code>ratio_y</code> is the vertical offset from the corner-to-corner midline.</div></div>
+      <div><div class="k">Why</div><div class="v"><strong>The best geometric eye-direction feature in the dataset.</strong> Because it is measured relative to your own eye corners, it stays the same wherever your head is in the frame and however close you sit — the thing raw iris pixels cannot do.</div></div>
+      <div><div class="k">How</div><div class="v">A <strong>vector projection</strong> of the outer→iris vector onto the outer→inner eye axis, normalized by the eye's width:
+<pre style="margin-top:.35rem"><code>x_ratio = ((iris − outer) · (inner − outer)) / ‖inner − outer‖²
+y_ratio = (iris_y − midline_y) / ‖inner − outer‖</code></pre>
+        Projection rather than a plain <code>(x−x₀)/(x₁−x₀)</code> because the eye axis tilts when
+        you tilt your head; the projection follows the tilted axis, a plain x-ratio silently breaks.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>gaze_features.py</code> → <code>iris_ratio()</code></div></div>
+    </div>
+  </div>
+
+  <div class="note why"><strong>The two eyes move in opposite numeric directions.</strong> The
+    left eye's axis runs left→right in the image (outer #33 → inner #133) while the right eye's runs
+    right→left (outer #263 → inner #362), so both measure the same anatomical direction: temple →
+    nose. The consequence is that looking right raises <code>iris_left_ratio_x</code> and lowers
+    <code>iris_right_ratio_x</code>. In the example row: <strong>0.559</strong> vs
+    <strong>0.382</strong> — both irises physically displaced the same way. Their <em>pattern</em>
+    encodes direction; their <em>difference</em> carries convergence, which relates to viewing depth.</div>
+</section>
+
+<!-- ============ GROUP: EYE CORNERS ============ -->
+<section>
+  <div class="grouphead">
+    <span class="gtag feat">Columns 22–29 · Feature</span>
+    <span class="gtitle">Eye corners</span>
+    <span class="grule"></span>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">22–29</span>
+      <span class="col-name">eye_{left,right}_{outer,inner}_{x,y}</span>
+      <span class="col-meta">float, 0–1 · 8 columns</span><span class="col-val">0.4152 … 0.4000</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">The four eye-corner points, x and y each.
+        <br><code>eye_left_outer</code> = #33 · <code>eye_left_inner</code> = #133
+        · <code>eye_right_inner</code> = #362 · <code>eye_right_outer</code> = #263</div></div>
+      <div><div class="k">Why</div><div class="v">Three jobs: they define the reference frame the iris ratio is measured against; their separation gives each eye's width (the normalizing denominator); and their positions encode eye shape and how the face is oriented.</div></div>
+      <div><div class="k">How</div><div class="v">Read directly from the landmark list, no computation.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>gaze_features.py</code> → <code>extract_features()</code>, loop over the four named indices.</div></div>
+    </div>
+  </div>
+  <div class="note"><strong>Naming.</strong> “Outer” always means the temple side and “inner” the
+    nose side — which is why the column order differs between the eyes (<code>left_outer</code>,
+    <code>left_inner</code>, <code>right_inner</code>, <code>right_outer</code>). Reading them
+    left-to-right traces across the face.</div>
+</section>
+
+<!-- ============ GROUP: EAR ============ -->
+<section>
+  <div class="grouphead">
+    <span class="gtag feat">Columns 30–31 · Feature</span>
+    <span class="gtitle">Eye openness (EAR)</span>
+    <span class="grule"></span>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">30–31</span><span class="col-name">ear_left, ear_right</span>
+      <span class="col-meta">float, ~0.10–0.35</span><span class="col-val">0.2983, 0.3033</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">Eye Aspect Ratio — how open each eye is. About <strong>0.30 wide open</strong>, about <strong>0.10 shut</strong>. The example row's eyes were fully open.</div></div>
+      <div><div class="k">Why</div><div class="v">Three uses. (1) Flags blinks, when eye readings are worthless. (2) Captures the drooping-eyelid effect when looking down, which is the physical reason bottom-of-screen accuracy is worst. (3) At runtime it drives the blink-to-click control in milestone 9.</div></div>
+      <div><div class="k">How</div><div class="v">The standard six-point formula — two vertical lid gaps averaged, divided by the horizontal width:
+<pre style="margin-top:.35rem"><code>EAR = (‖p₂−p₆‖ + ‖p₃−p₅‖) / (2 × ‖p₁−p₄‖)
+
+left  p₁..p₆ = 33, 160, 158, 133, 153, 144
+right p₁..p₆ = 362, 385, 387, 263, 373, 380</code></pre>
+        Measured in pixels, so it is scale-free: dividing by the eye's own width cancels distance.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>gaze_features.py</code> → <code>eye_aspect_ratio()</code></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GROUP: FACE GEOMETRY ============ -->
+<section>
+  <div class="grouphead">
+    <span class="gtag feat">Columns 32–34 · Feature</span>
+    <span class="gtitle">Face geometry — scale cues</span>
+    <span class="grule"></span>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">32–33</span><span class="col-name">face_width, face_height</span>
+      <span class="col-meta">float, 0–1</span><span class="col-val">0.1903, 0.4430</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">How much of the frame the face occupies. The example face was 19% of the frame's width and 44% of its height.</div></div>
+      <div><div class="k">Why</div><div class="v">A direct proxy for distance — a bigger face means closer. Also useful for spotting a person whose face is unusually large or small in frame, which changes every other pixel measurement.</div></div>
+      <div><div class="k">How</div><div class="v"><code>face_width = |landmarks[454].x − landmarks[234].x|</code> (cheek to cheek)<br>
+        <code>face_height = |landmarks[152].y − landmarks[10].y|</code> (chin to forehead)<br>
+        Kept in normalized units, so both are fractions of the frame.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>gaze_features.py</code> → <code>extract_features()</code></div></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">34</span><span class="col-name">ipd_px</span>
+      <span class="col-meta">float, pixels</span><span class="col-val">114.485182</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">Interpupillary distance — the straight-line pixel gap between the two iris centres. 114 px in the example.</div></div>
+      <div><div class="k">Why</div><div class="v">The single measurement the entire distance estimate rests on, kept raw so a model (or you) can recompute distance under different assumptions instead of trusting the 6.3 cm average.</div></div>
+      <div><div class="k">How</div><div class="v">Pythagoras between the two iris points <em>after</em> converting to pixels:
+        <br><code>ipd_px = ‖(landmark₄₇₃ − landmark₄₆₈) ⊙ (1280, 720)‖₂</code>
+        <br>The multiply matters — normalized coordinates are not square, so the distance must be taken in pixel space.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>gaze_features.py</code> → <code>extract_features()</code>, using <code>_dist()</code> and <code>_px()</code></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GROUP: POSITION ============ -->
+<section>
+  <div class="grouphead">
+    <span class="gtag feat">Columns 35–37 · Feature</span>
+    <span class="gtitle">Position — from the positioning gate</span>
+    <span class="grule"></span>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">35</span><span class="col-name">pos_distance_cm</span>
+      <span class="col-meta">float, centimetres</span><span class="col-val">59.069595</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">Estimated distance from the screen in real centimetres. 59.1 cm in the example — inside the allowed 45–65 cm band.</div></div>
+      <div><div class="k">Why</div><div class="v">Distance changes where a given eye angle lands on screen, so it is essential context. It is also the value the positioning gate enforces — every row in this file was captured within the allowed band, because out-of-zone frames are discarded before they can be written.</div></div>
+      <div><div class="k">How</div><div class="v">The pinhole camera model applied to a known real-world size — the same principle a camera-only car uses to judge distance:
+<pre style="margin-top:.35rem"><code>distance_cm = focal_px × 6.3 / ipd_px</code></pre>
+        6.3 cm is the adult average pupil separation. <code>focal_px</code> is 1073.4 on this
+        machine, measured by sitting at exactly 50 cm and pressing <code>c</code> in milestone 5
+        (otherwise estimated from an assumed 60° field of view).
+        <br><strong>Check against the example row:</strong> 1073.4 × 6.3 ÷ 114.485 = <strong>59.07</strong> ✓</div></div>
+      <div><div class="k">Where</div><div class="v"><code>positioning_gate.py</code> → <code>PositioningGate.evaluate()</code>; copied into the row by <code>gaze_features.extract_features()</code></div></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">36–37</span><span class="col-name">pos_face_dx, pos_face_dy</span>
+      <span class="col-meta">float, ±0.5</span><span class="col-val">−0.020778, 0.017158</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">How far off-centre the face sits in the frame, as a fraction. <code>0,0</code> means perfectly centred; negative dx is left of centre, positive dy is below centre. The example was almost perfectly centred (2% off each way).</div></div>
+      <div><div class="k">Why</div><div class="v">Sitting off to one side skews the geometry between eye, screen and camera. Recording the offset lets a model correct for it, and it is the second constraint the gate enforces — beyond ±0.12 the frame is rejected.</div></div>
+      <div><div class="k">How</div><div class="v">Nose tip position minus the frame centre:
+        <br><code>dx = landmarks[1].x − 0.5</code> &nbsp; <code>dy = landmarks[1].y − 0.5</code></div></div>
+      <div><div class="k">Where</div><div class="v"><code>positioning_gate.py</code> → <code>PositioningGate.evaluate()</code></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GROUP: META TAIL ============ -->
+<section>
+  <div class="grouphead">
+    <span class="gtag met">Columns 38–39 · Metadata</span>
+    <span class="gtitle">When and which layout</span>
+    <span class="grule"></span>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">38</span><span class="col-name">timestamp</span>
+      <span class="col-meta">ISO-8601</span><span class="col-val">2026-07-21T11:05:42</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">When the batch was written to disk — <strong>not</strong> when the individual frame was captured. Every row saved in one batch shares the same value.</div></div>
+      <div><div class="k">Why</div><div class="v">Orders sessions chronologically and lets you spot data collected in unusual conditions (late at night, poor light) if accuracy turns out to vary.</div></div>
+      <div><div class="k">How</div><div class="v"><code>datetime.now().isoformat(timespec="seconds")</code>, evaluated once per <code>append_dataset()</code> call.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>calibration_utils.py</code> → <code>append_dataset()</code></div></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="col-head"><span class="idx">39</span><span class="col-name">schema_version</span>
+      <span class="col-meta">int</span><span class="col-val">3</span></div>
+    <div class="wwh">
+      <div><div class="k">What</div><div class="v">Which column layout the row was originally written under. <code>3</code> is current; <code>1</code> and <code>2</code> mark migrated legacy rows.</div></div>
+      <div><div class="k">Why</div><div class="v">Older rows only ever had gaze angles and partial position data — the other columns are blank for them. This flag tells training code which rows can support a feature-rich model without having to test every field.</div></div>
+      <div><div class="k">How</div><div class="v">Constant <code>SCHEMA_VERSION = 3</code> for new rows; migrated rows keep the version they were born with.</div></div>
+      <div><div class="k">Where</div><div class="v"><code>calibration_utils.py</code> → <code>append_dataset()</code> and <code>_migrate_dataset()</code></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ QUICK REF ============ -->
+<section>
+  <h2><span class="n">04</span> All 39 columns at a glance</h2>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>#</th><th>Column</th><th>Unit / range</th><th>Example</th><th>Produced by</th></tr></thead>
+      <tbody>
+        <tr><td class="idx">1</td><td><code>source</code></td><td>string</td><td class="num">milestone7_game</td><td>calibration_utils</td></tr>
+        <tr><td class="idx">2</td><td><code>user</code></td><td>string</td><td class="num">asif</td><td>calibration_utils</td></tr>
+        <tr><td class="idx">3</td><td><code>session_id</code></td><td>timestamp id</td><td class="num">20260721-110510</td><td>calibration_utils</td></tr>
+        <tr><td class="idx">4</td><td><code>target_x</code></td><td>0–1</td><td class="num">0.788274</td><td>milestone 4 / 7</td></tr>
+        <tr><td class="idx">5</td><td><code>target_y</code></td><td>0–1</td><td class="num">0.670046</td><td>milestone 4 / 7</td></tr>
+        <tr><td class="idx">6</td><td><code>gaze_pitch</code></td><td>radians</td><td class="num">−0.283851</td><td>gaze_pipeline (ONNX)</td></tr>
+        <tr><td class="idx">7</td><td><code>gaze_yaw</code></td><td>radians</td><td class="num">−0.232315</td><td>gaze_pipeline (ONNX)</td></tr>
+        <tr><td class="idx">8</td><td><code>head_pitch</code></td><td>degrees</td><td class="num">3.530151</td><td>gaze_features</td></tr>
+        <tr><td class="idx">9</td><td><code>head_yaw</code></td><td>degrees</td><td class="num">−1.150468</td><td>gaze_features</td></tr>
+        <tr><td class="idx">10</td><td><code>head_roll</code></td><td>degrees</td><td class="num">4.177264</td><td>gaze_features</td></tr>
+        <tr><td class="idx">11</td><td><code>head_tx</code></td><td>matrix units</td><td class="num">−1.336937</td><td>gaze_features</td></tr>
+        <tr><td class="idx">12</td><td><code>head_ty</code></td><td>matrix units</td><td class="num">1.058696</td><td>gaze_features</td></tr>
+        <tr><td class="idx">13</td><td><code>head_tz</code></td><td>matrix units</td><td class="num">−35.716217</td><td>gaze_features</td></tr>
+        <tr><td class="idx">14</td><td><code>iris_left_x</code></td><td>0–1</td><td class="num">0.436790</td><td>landmark 468</td></tr>
+        <tr><td class="idx">15</td><td><code>iris_left_y</code></td><td>0–1</td><td class="num">0.414513</td><td>landmark 468</td></tr>
+        <tr><td class="idx">16</td><td><code>iris_right_x</code></td><td>0–1</td><td class="num">0.525949</td><td>landmark 473</td></tr>
+        <tr><td class="idx">17</td><td><code>iris_right_y</code></td><td>0–1</td><td class="num">0.401877</td><td>landmark 473</td></tr>
+        <tr><td class="idx">18</td><td><code>iris_left_ratio_x</code></td><td>~0–1</td><td class="num">0.559030</td><td>gaze_features</td></tr>
+        <tr><td class="idx">19</td><td><code>iris_left_ratio_y</code></td><td>~±0.2</td><td class="num">−0.044174</td><td>gaze_features</td></tr>
+        <tr><td class="idx">20</td><td><code>iris_right_ratio_x</code></td><td>~0–1</td><td class="num">0.382185</td><td>gaze_features</td></tr>
+        <tr><td class="idx">21</td><td><code>iris_right_ratio_y</code></td><td>~±0.2</td><td class="num">−0.049007</td><td>gaze_features</td></tr>
+        <tr><td class="idx">22</td><td><code>eye_left_outer_x</code></td><td>0–1</td><td class="num">0.415242</td><td>landmark 33</td></tr>
+        <tr><td class="idx">23</td><td><code>eye_left_outer_y</code></td><td>0–1</td><td class="num">0.418164</td><td>landmark 33</td></tr>
+        <tr><td class="idx">24</td><td><code>eye_left_inner_x</code></td><td>0–1</td><td class="num">0.453841</td><td>landmark 133</td></tr>
+        <tr><td class="idx">25</td><td><code>eye_left_inner_y</code></td><td>0–1</td><td class="num">0.416926</td><td>landmark 133</td></tr>
+        <tr><td class="idx">26</td><td><code>eye_right_inner_x</code></td><td>0–1</td><td class="num">0.502320</td><td>landmark 362</td></tr>
+        <tr><td class="idx">27</td><td><code>eye_right_inner_y</code></td><td>0–1</td><td class="num">0.410538</td><td>landmark 362</td></tr>
+        <tr><td class="idx">28</td><td><code>eye_right_outer_x</code></td><td>0–1</td><td class="num">0.540867</td><td>landmark 263</td></tr>
+        <tr><td class="idx">29</td><td><code>eye_right_outer_y</code></td><td>0–1</td><td class="num">0.400011</td><td>landmark 263</td></tr>
+        <tr><td class="idx">30</td><td><code>ear_left</code></td><td>~0.10–0.35</td><td class="num">0.298301</td><td>gaze_features</td></tr>
+        <tr><td class="idx">31</td><td><code>ear_right</code></td><td>~0.10–0.35</td><td class="num">0.303274</td><td>gaze_features</td></tr>
+        <tr><td class="idx">32</td><td><code>face_width</code></td><td>0–1</td><td class="num">0.190279</td><td>landmarks 234/454</td></tr>
+        <tr><td class="idx">33</td><td><code>face_height</code></td><td>0–1</td><td class="num">0.443025</td><td>landmarks 10/152</td></tr>
+        <tr><td class="idx">34</td><td><code>ipd_px</code></td><td>pixels</td><td class="num">114.485182</td><td>gaze_features</td></tr>
+        <tr><td class="idx">35</td><td><code>pos_distance_cm</code></td><td>cm</td><td class="num">59.069595</td><td>positioning_gate</td></tr>
+        <tr><td class="idx">36</td><td><code>pos_face_dx</code></td><td>±0.5</td><td class="num">−0.020778</td><td>positioning_gate</td></tr>
+        <tr><td class="idx">37</td><td><code>pos_face_dy</code></td><td>±0.5</td><td class="num">0.017158</td><td>positioning_gate</td></tr>
+        <tr><td class="idx">38</td><td><code>timestamp</code></td><td>ISO-8601</td><td class="num">2026-07-21T11:05:42</td><td>calibration_utils</td></tr>
+        <tr><td class="idx">39</td><td><code>schema_version</code></td><td>int</td><td class="num">3</td><td>calibration_utils</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ APPENDIX ============ -->
+<section>
+  <h2><span class="n">05</span> Every formula in one place</h2>
+<pre><code>GAZE ANGLES        deg = Σ(pᵢ × i) × 4 − 180        pᵢ = softmax over 90 bins
+                   rad = deg × π / 180
+
+HEAD ROTATION      pitch,yaw,roll = euler_xyz( matrix[:3,:3] )      degrees
+HEAD TRANSLATION   tx,ty,tz       = matrix[:3, 3]
+
+IRIS RATIO         x = ((iris − outer)·(inner − outer)) / ‖inner − outer‖²
+                   y = (iris_y − midline_y) / ‖inner − outer‖
+
+EAR                (‖p₂−p₆‖ + ‖p₃−p₅‖) / (2 × ‖p₁−p₄‖)
+
+FACE WIDTH         |lm[454].x − lm[234].x|
+FACE HEIGHT        |lm[152].y − lm[10].y|
+
+IPD                ‖(lm[473] − lm[468]) ⊙ (W, H)‖₂                  pixels
+
+DISTANCE           focal_px × 6.3 / ipd_px                          centimetres
+                   focal_px = 1073.4 measured, or W / (2·tan(HFOV/2))
+
+FACE OFFSET        dx = lm[1].x − 0.5     dy = lm[1].y − 0.5</code></pre>
+
+  <h3>Reading the file in code</h3>
+<pre><code>from calibration_utils import load_dataset, load_dataset_full
+
+rows = load_dataset_full()          # every column, as dicts
+pairs, counts = load_dataset()      # (gaze_pitch, gaze_yaw, target_x, target_y)
+
+# one person, one session, new schema only
+subset = [r for r in rows
+          if r["user"] == "arsi"
+          and r["schema_version"] == "3"
+          and r["source"] == "milestone4_pursuit"]</code></pre>
+  <p>Or run <code>python inspect_dataset.py</code> for a plain-language summary of what the
+     file currently holds.</p>
+</section>
+
+<footer>
+  <div>Gaze dataset column reference · schema v3 · 2026-07-21</div>
+  <div>Live column dictionary regenerated beside the data at <code>data/README.md</code></div>
+  <div>To save as PDF: Ctrl+P → Destination “Save as PDF” → Background graphics on.</div>
+</footer>
+
+</div>

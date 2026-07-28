@@ -1,0 +1,467 @@
+<title>Milestone 9 — Gaze Snake: Cheat Sheet & Technical Reference</title>
+
+<style>
+  :root {
+    --paper: #F3F5F7; --card: #FFFFFF; --ink: #131A22; --ink-soft: #4A5A67;
+    --ink-faint: #788894; --rule: #DBE2E7; --rule-soft: #E9EEF1;
+    --accent: #D4600B; --accent-bg: #FDF0E4;
+    --snake: #1D7A4C; --snake-bg: #E7F4ED;
+    --bad: #B3261E; --bad-bg: #FBEAE9; --cyan: #0A7C95;
+    --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+    --measure: 70ch; --radius: 3px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0D1318; --card: #141C23; --ink: #E6EDF2; --ink-soft: #A3B2BD;
+      --ink-faint: #71818D; --rule: #263139; --rule-soft: #1C252C;
+      --accent: #F2933F; --accent-bg: #2A1B0E;
+      --snake: #5FC98D; --snake-bg: #10251A;
+      --bad: #E4776E; --bad-bg: #2A1614; --cyan: #4FC3DA;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0D1318; --card: #141C23; --ink: #E6EDF2; --ink-soft: #A3B2BD;
+    --ink-faint: #71818D; --rule: #263139; --rule-soft: #1C252C;
+    --accent: #F2933F; --accent-bg: #2A1B0E;
+    --snake: #5FC98D; --snake-bg: #10251A;
+    --bad: #E4776E; --bad-bg: #2A1614; --cyan: #4FC3DA;
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F5F7; --card: #FFFFFF; --ink: #131A22; --ink-soft: #4A5A67;
+    --ink-faint: #788894; --rule: #DBE2E7; --rule-soft: #E9EEF1;
+    --accent: #D4600B; --accent-bg: #FDF0E4;
+    --snake: #1D7A4C; --snake-bg: #E7F4ED;
+    --bad: #B3261E; --bad-bg: #FBEAE9; --cyan: #0A7C95;
+  }
+
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans);
+         font-size: 15.5px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem;
+          display: flex; flex-direction: column; gap: 2.4rem; }
+
+  .masthead { display: flex; flex-direction: column; gap: 0.7rem; }
+  .doc-type { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.18em;
+              text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(1.8rem, 4.5vw, 2.5rem); line-height: 1.08; font-weight: 700;
+       letter-spacing: -0.025em; margin: 0; text-wrap: balance; }
+  .meta-line { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem;
+               font-family: var(--mono); font-size: 0.75rem; color: var(--ink-faint);
+               border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+               padding: 0.55rem 0; }
+  .meta-line b { color: var(--ink-soft); font-weight: 500; }
+
+  /* part divider */
+  .part { display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; }
+  .part-num { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.16em;
+              text-transform: uppercase; color: var(--paper); background: var(--accent);
+              padding: 0.25rem 0.6rem; border-radius: 2px; white-space: nowrap; }
+  .part-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+  .part-rule { flex: 1; height: 2px; background: var(--accent); opacity: 0.35; }
+
+  section { display: flex; flex-direction: column; gap: 0.9rem; }
+  h2 { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.015em; margin: 0;
+       padding-bottom: 0.4rem; border-bottom: 1px solid var(--rule);
+       display: flex; align-items: baseline; gap: 0.6rem; }
+  h2 .n { font-family: var(--mono); font-size: 0.74rem; color: var(--accent); }
+  h3 { font-size: 1rem; font-weight: 650; margin: 0.4rem 0 0; }
+  p { margin: 0; max-width: var(--measure); }
+  .lead { color: var(--ink-soft); }
+  ul, ol.body { margin: 0; padding-left: 1.15rem; max-width: var(--measure);
+                display: flex; flex-direction: column; gap: 0.3rem; }
+
+  code { font-family: var(--mono); background: var(--rule-soft); padding: 0.08em 0.32em;
+         border-radius: 2px; font-size: 0.89em; }
+  pre { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius);
+        padding: 0.85rem 1rem; overflow-x: auto; font-family: var(--mono);
+        font-size: 0.79rem; line-height: 1.5; margin: 0; break-inside: avoid; }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  .table-scroll { overflow-x: auto; border: 1px solid var(--rule);
+                  border-radius: var(--radius); background: var(--card); break-inside: avoid; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--rule-soft);
+           vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+             text-transform: uppercase; color: var(--ink-faint); background: var(--rule-soft);
+             border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+  td code { white-space: nowrap; }
+  .num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  .note { border-left: 3px solid var(--cyan); background: var(--card);
+          border-radius: var(--radius); padding: 0.8rem 1rem; font-size: 0.9rem;
+          color: var(--ink-soft); break-inside: avoid; max-width: var(--measure); }
+  .note strong { color: var(--ink); }
+  .note.bug { border-left-color: var(--bad); }
+  .note.why { border-left-color: var(--accent); }
+
+  .steps { display: flex; flex-direction: column; gap: 0.5rem; }
+  .step { display: grid; grid-template-columns: 1.9rem 1fr; gap: 0.85rem; align-items: start;
+          background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius);
+          padding: 0.75rem 0.95rem; break-inside: avoid; }
+  .step .k { font-family: var(--mono); font-size: 0.78rem; color: var(--accent); padding-top: 0.1rem; }
+  .step .t { font-weight: 620; font-size: 0.95rem; }
+  .step .d { font-size: 0.88rem; color: var(--ink-soft); }
+
+  .zones { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.9rem; }
+  .zone { border: 1px solid var(--rule); border-radius: var(--radius); padding: 0.85rem 1rem;
+          background: var(--card); break-inside: avoid; }
+  .zone .h { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+             text-transform: uppercase; color: var(--accent); }
+  .zone .v { font-size: 1.25rem; font-weight: 660; font-variant-numeric: tabular-nums;
+             margin-top: 0.15rem; }
+  .zone .d { font-size: 0.85rem; color: var(--ink-soft); margin-top: 0.2rem; }
+
+  figure { margin: 0; display: flex; flex-direction: column; gap: 0.4rem; break-inside: avoid; }
+  figure svg { width: 100%; height: auto; background: var(--card);
+               border: 1px solid var(--rule); border-radius: var(--radius); }
+  figcaption { font-size: 0.82rem; color: var(--ink-faint); }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 1rem; font-size: 0.82rem;
+           color: var(--ink-faint); display: flex; flex-direction: column; gap: 0.25rem; }
+
+  @page { margin: 14mm 13mm; }
+  @media print {
+    :root { --paper: #FFF; --card: #FFF; --ink: #000; --ink-soft: #2E2E2E;
+            --ink-faint: #575757; --rule: #B8B8B8; --rule-soft: #EDEDED;
+            --accent: #A64B08; --accent-bg: #F7EEE6; --snake: #0F5C31;
+            --snake-bg: #EDF5F0; --bad: #8C1E18; --cyan: #0A5A6B; }
+    body { font-size: 9.8pt; line-height: 1.45; }
+    .wrap { max-width: none; padding: 0; gap: 1.2rem; }
+    h1 { font-size: 20pt; }
+    .part-title { font-size: 14pt; }
+    h2 { font-size: 12pt; page-break-after: avoid; }
+    h3 { page-break-after: avoid; }
+    pre, .table-scroll, .note, .step, .zone, figure { page-break-inside: avoid; }
+    table { font-size: 8pt; }
+    th, td { padding: 0.3rem 0.45rem; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="doc-type">Milestone 9 · Cheat sheet &amp; technical reference</div>
+    <h1>Gaze Snake</h1>
+    <div class="meta-line">
+      <span><b>File:</b> milestone9_snake_game.py</span>
+      <span><b>Input:</b> eyes only — gaze steers, blink presses</span>
+      <span><b>Writes data:</b> no</span>
+      <span><b>Version:</b> 2026-07-21</span>
+    </div>
+    <p class="lead">Snake played entirely with the eyes. You steer by looking where you
+       want the snake to go, and press the two on-screen buttons by blinking. It reuses
+       the whole tracking stack from milestones 4 and 7 — the positioning gate, drift
+       correction and calibrated gaze cursor — and adds nothing to the dataset.</p>
+  </header>
+
+  <!-- ══════════════ PART ONE ══════════════ -->
+  <div class="part">
+    <span class="part-num">Part 1</span>
+    <h2 class="part-title" style="border:none;padding:0">Cheat sheet — how to play</h2>
+    <span class="part-rule"></span>
+  </div>
+
+  <section>
+    <h2><span class="n">1.1</span> Before you start</h2>
+    <p>The game needs a calibration file. If you have never calibrated, or you have
+       moved your chair or laptop since, do this first:</p>
+<pre><code>$env:GAZE_USER = "arsi"              # tag your data (once per terminal)
+python milestone4_calibration.py     # ~100 s — creates calibration_model.pkl
+python milestone9_snake_game.py</code></pre>
+    <p>Without a calibration the game refuses to start and tells you so.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">1.2</span> The three things that happen at launch</h2>
+    <div class="steps">
+      <div class="step"><div class="k">1</div><div>
+        <div class="t">Get into position</div>
+        <div class="d">Sit 45–65 cm away, face centred. Hold GREEN for 2 seconds and it moves on.</div></div></div>
+      <div class="step"><div class="k">2</div><div>
+        <div class="t">Drift check — look at the centre dot</div>
+        <div class="d">Measures how your posture differs from calibration day and subtracts it. Takes about 3 seconds.</div></div></div>
+      <div class="step"><div class="k">3</div><div>
+        <div class="t">GET READY — 2 seconds to aim</div>
+        <div class="d">The snake does not move yet, but steering is already live. Look where you want it to launch.</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">1.3</span> Controls</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>To do this</th><th>Do this</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Steer the snake</td><td>Look where you want it to go</td>
+              <td>It turns toward your gaze. It will not reverse into itself, and it will not drive into a wall.</td></tr>
+          <tr><td>Eat food</td><td>Look at the orange dot</td>
+              <td>Aim assist pulls you onto it once you are close. The zone is invisible by design.</td></tr>
+          <tr><td>Press RESTART / QUIT</td><td>Look at the button, then <strong>blink</strong></td>
+              <td>Wait for it to light up and say BLINK NOW. You then have 2 seconds.</td></tr>
+          <tr><td>Emergency exit</td><td><code>q</code> on the keyboard</td>
+              <td>Always works, in case gaze control gets stuck.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note"><strong>Blinking is only for buttons.</strong> Blinking while playing
+      does nothing — the cursor simply freezes for that instant and carries on. You cannot
+      accidentally crash by blinking.</div>
+  </section>
+
+  <section>
+    <h2><span class="n">1.4</span> What is on the screen</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>You see</th><th>It means</th></tr></thead>
+        <tbody>
+          <tr><td>Bright green square</td><td>The snake's head — the end that moves.</td></tr>
+          <tr><td>Darker green squares</td><td>Its body. Running into it ends the game.</td></tr>
+          <tr><td>Orange dot</td><td>Food. Its aim-assist zone is deliberately not drawn — set <code>SHOW_FOOD_ZONE = True</code> to reveal it while debugging.</td></tr>
+          <tr><td>Yellow circle</td><td>Your gaze cursor — where the system thinks you are looking.</td></tr>
+          <tr><td>Thin grey line + green arrow</td><td>From the head to your aim, plus the direction actually chosen. If these disagree with your intention, that is calibration drift.</td></tr>
+          <tr><td>White ring on a button</td><td>The button is locked and waiting for your blink.</td></tr>
+          <tr><td>Green bar labelled “eyes”</td><td>How open your eyes are. The white notch is the blink threshold — the bar dropping below it counts as a blink.</td></tr>
+          <tr><td>HOLD POSITION in red</td><td>You drifted out of the allowed zone. The game pauses until you return.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">1.5</span> Tips</h2>
+    <ul>
+      <li><strong>Look ahead of the snake, not at it.</strong> Looking at the head itself is a
+          dead zone and gives no command.</li>
+      <li><strong>Look well away from the head to turn decisively.</strong> A glance just beside
+          it produces a weak signal; a clear look up or down turns cleanly.</li>
+      <li><strong>Do not chase the yellow cursor.</strong> Look at the target; let the cursor
+          come to you. Chasing your own cursor creates a feedback loop.</li>
+      <li><strong>Blink deliberately on buttons</strong> — a firm, normal blink. Fluttering may
+          fall inside the 0.6 s cooldown and register only once.</li>
+      <li><strong>If steering feels biased in one direction</strong>, that is drift: quit and
+          relaunch so the drift check re-measures.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="n">1.6</span> If something feels wrong</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>Cursor sits off to one side of where you look</td><td>Posture differs from calibration</td><td>Quit and relaunch (redoes drift check); recalibrate if severe</td></tr>
+          <tr><td>Snake ignores you completely</td><td>Out of the zone, or gaze is on a button</td><td>Check for the red HOLD POSITION message; look back into the board</td></tr>
+          <tr><td>Buttons will not press</td><td>Blink not detected</td><td>Watch the eyes bar — if it never crosses the notch, lower <code>BLINK_EAR</code></td></tr>
+          <tr><td>Buttons trigger by themselves</td><td>Blink threshold too high for your eyes</td><td>Raise <code>BLINK_EAR</code> toward 0.22</td></tr>
+          <tr><td>Everything is sluggish</td><td>Gaze model is CPU-bound at 8–15 fps</td><td>Expected; close other heavy apps</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════ PART TWO ══════════════ -->
+  <div class="part">
+    <span class="part-num">Part 2</span>
+    <h2 class="part-title" style="border:none;padding:0">Technical reference</h2>
+    <span class="part-rule"></span>
+  </div>
+
+  <section>
+    <h2><span class="n">2.1</span> What it reuses, what it adds</h2>
+<pre><code>milestone4_calibration.py    FrameReader, phase_a_positioning, measure_drift,
+                             aborted, CANVAS_W/H
+milestone7_gaze_game.py      GazeCursor (with a smoothing override)
+positioning_gate.py          PositioningGate — distance + centring constraint
+gaze_pipeline.py             reset_bbox_smoothing
+calibration_utils.py         load_calibration            [read only]
+
+new in this file             Snake, Button, BlinkDetector, magnet(),
+                             button_assist(), food_assist()</code></pre>
+    <div class="note"><strong>Data policy.</strong> This milestone <em>consumes</em> the
+      calibration model and writes nothing. Snake has no “look at this dot” moment, so any
+      label would be a guess. Training data comes only from milestone 4 and milestone 7.</div>
+  </section>
+
+  <section>
+    <h2><span class="n">2.2</span> Board geometry</h2>
+    <div class="zones">
+      <div class="zone"><div class="h">Grid</div><div class="v">32 × 15</div>
+        <div class="d">cells of 40 px (~1.1 cm), chosen larger than the tracker's ~2 cm error</div></div>
+      <div class="zone"><div class="h">Play area</div><div class="v">1280 × 600</div>
+        <div class="d">buttons occupy the strip below, y 600–720</div></div>
+      <div class="zone"><div class="h">Tick</div><div class="v">0.22 s</div>
+        <div class="d">≈4.5 moves per second</div></div>
+      <div class="zone"><div class="h">Grace</div><div class="v">2.0 s</div>
+        <div class="d">aiming time at start and after every restart</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">2.3</span> Steering algorithm</h2>
+    <p>Called every frame; the snake only moves every tick, so several steers occur between
+       moves. Candidate directions are ranked by how much of the gap to the aim point each
+       closes, then filtered in three tiers:</p>
+<pre><code>1. best requested direction that is neither a reversal nor fatal
+2. otherwise turn perpendicular, preferring the side you are looking toward
+3. otherwise any legal escape; if none, keep heading (genuinely trapped)</code></pre>
+    <p>A dead zone of <code>0.6 × CELL</code> around the head produces no command, so looking
+       at the snake itself holds the current course.</p>
+
+    <h3>Safety test</h3>
+<pre><code>def is_safe(self, direction):
+    nx, ny = head + direction
+    if out of bounds: return False
+    # the tail vacates its cell this tick, so it only blocks when eating
+    occupied = self.body if (nx, ny) == self.food else list(self.body)[1:]
+    return (nx, ny) not in occupied</code></pre>
+
+    <div class="note why"><strong>Why obey-blindly does not work here.</strong> Gaze is accurate
+      to about 2 cm. Near an edge, a stray reading points into the wall; a keyboard player would
+      never issue that command, but the tracker does it constantly. Filtering fatal directions is
+      what makes the game playable rather than a slot machine. Verified: 30 games × 100 fully
+      random aim points produce <strong>0 deaths</strong>.</div>
+  </section>
+
+  <section>
+    <h2><span class="n">2.4</span> Blink detection</h2>
+    <p>Uses the <code>ear_left</code> / <code>ear_right</code> features from
+       <code>gaze_features.py</code> — eye aspect ratio, roughly 0.30 open and 0.10 shut.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Constant</th><th class="num">Value</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><code>BLINK_EAR</code></td><td class="num">0.18</td><td>Mean EAR below this counts as shut</td></tr>
+          <tr><td><code>BLINK_COOLDOWN</code></td><td class="num">0.6 s</td><td>Minimum spacing between registered blinks</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Edge-triggered on the open→shut transition, so holding the eyes closed fires once rather
+       than every frame.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">2.5</span> Button lock — and the problem it solves</h2>
+    <div class="note bug"><strong>The problem.</strong> Closing your eyes makes the gaze network
+      read closed eyelids and emit nonsense angles. The cursor therefore leaps away at the exact
+      moment you blink to press a button — the press always missed.</div>
+    <p>Two independent fixes:</p>
+    <ol class="body">
+      <li><strong>Cursor freeze.</strong> While EAR is below the blink threshold the cursor stops
+          updating entirely and holds its last good position. Applies everywhere, not just to buttons.</li>
+      <li><strong>Dwell lock.</strong> After 0.25 s of gaze on a button it locks and ignores gaze
+          completely for 2 seconds, pinning the cursor to its centre.</li>
+    </ol>
+<pre><code>idle ──hover 0.25s──▶ LOCKED ──blink──▶ pressed
+                        │
+                        └──2.0s, no blink──▶ released ──0.8s refractory──▶ idle</code></pre>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Constant</th><th class="num">Value</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><code>BUTTON_DWELL</code></td><td class="num">0.25 s</td><td>Gaze rest required before locking</td></tr>
+          <tr><td><code>LOCK_WINDOW</code></td><td class="num">2.0 s</td><td>How long the lock waits for a blink</td></tr>
+          <tr><td><code>LOCK_REFRACTORY</code></td><td class="num">0.8 s</td><td>Pause before the same button can re-lock</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">2.6</span> Aim assist</h2>
+    <p>One shared <code>magnet()</code> function: full lock inside <em>snap</em>, linear fade out
+       to <em>radius</em>, nothing beyond. Applied in two scopes that cannot overlap.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Scope</th><th class="num">Snap</th><th class="num">Radius</th><th>Active where</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Buttons</strong></td><td class="num">95 px · 2.5 cm</td><td class="num">260 px · 7 cm</td>
+              <td>y ≥ 520 only</td><td>Strong — must exceed the button's own 130 px half-width</td></tr>
+          <tr><td><strong>Food</strong></td><td class="num">55 px · 1.5 cm</td><td class="num">190 px · 5 cm</td>
+              <td>Play area only</td><td>Weaker — you must still be able to steer away deliberately</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note why"><strong>Sizing rule.</strong> The radius must exceed the target's own
+      size <em>plus</em> the tracker's error, or the assist never engages. The first version used
+      110 px against a button whose half-width was 130 px — a gaze landing on the button's edge got
+      no help at all, which is why it felt inert.</div>
+    <p>Measured pull toward food: 40 px away → snapped on; 100 px → pulled to 33 px; 150 px →
+       pulled to 105 px; beyond 190 px → untouched.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">2.7</span> Bug history</h2>
+    <p>Three defects produced an immediate, unprovoked GAME OVER. All are fixed and covered by
+       regression tests.</p>
+
+    <h3>Bug 1 — reversal checked against the pending direction</h3>
+<pre><code>moving right, body (14,7) (15,7) (16,7), head at (16,7)
+frame 1: steer → UP    (legal, not the reverse of right)
+frame 2: steer → LEFT  (legal, not the reverse of UP)     ← slips through
+tick:    head (16,7) → (15,7) = its own neck → dead, score 0</code></pre>
+    <p><strong>Fix:</strong> record <code>last_dir</code> when a move actually executes, and judge
+       reversals against that rather than the pending direction.</p>
+
+    <h3>Bug 2 — steering obeyed fatal commands</h3>
+    <p>With the snake on the top row, a glance above it set direction UP and it drove into the
+       wall one tick later. <strong>Fix:</strong> the three-tier safety filter in §2.3.</p>
+
+    <h3>Bug 3 — no time to aim</h3>
+    <p>The drift check leaves you looking at screen centre, which sits below the snake's start
+       position, so it dived immediately. After RESTART you were still looking at the button.
+       <strong>Fix:</strong> the 2-second grace period, during which steering is live but the
+       snake does not move.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">2.8</span> Constant reference</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Constant</th><th class="num">Default</th><th>Effect of increasing</th></tr></thead>
+        <tbody>
+          <tr><td><code>CELL</code></td><td class="num">40 px</td><td>Bigger cells, coarser board, easier to steer</td></tr>
+          <tr><td><code>TICK</code></td><td class="num">0.22 s</td><td>Slower snake, more thinking time</td></tr>
+          <tr><td><code>START_GRACE</code></td><td class="num">2.0 s</td><td>Longer aiming pause before it moves</td></tr>
+          <tr><td><code>CURSOR_SMOOTHING</code></td><td class="num">0.5</td><td>More responsive, more jittery (milestone 7 uses 0.25)</td></tr>
+          <tr><td><code>SHOW_INTENT</code></td><td class="num">True</td><td>Draws the aim line and direction arrow</td></tr>
+          <tr><td><code>BLINK_EAR</code></td><td class="num">0.18</td><td>Blinks detected more readily; risk of false presses</td></tr>
+          <tr><td><code>BLINK_COOLDOWN</code></td><td class="num">0.6 s</td><td>Fewer repeated presses from one long blink</td></tr>
+          <tr><td><code>BUTTON_DWELL</code></td><td class="num">0.25 s</td><td>Longer stare needed before a button locks</td></tr>
+          <tr><td><code>LOCK_WINDOW</code></td><td class="num">2.0 s</td><td>More time to blink after locking</td></tr>
+          <tr><td><code>LOCK_REFRACTORY</code></td><td class="num">0.8 s</td><td>Longer pause before re-locking</td></tr>
+          <tr><td><code>ASSIST_RADIUS</code> / <code>ASSIST_SNAP</code></td><td class="num">260 / 95</td><td>Stronger button magnetism</td></tr>
+          <tr><td><code>FOOD_ASSIST_RADIUS</code> / <code>_SNAP</code></td><td class="num">190 / 55</td><td>Stronger food magnetism</td></tr>
+          <tr><td><code>ASSIST_MIN_Y</code></td><td class="num">520</td><td>Button assist reaches further up the board</td></tr>
+          <tr><td><code>SHOW_FOOD_ZONE</code></td><td class="num">False</td><td>Draws the food assist radius — for debugging only</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">2.9</span> Frame loop order</h2>
+<pre><code>read frame → gate.evaluate → gaze model (if in zone) → extract features
+  ├─ EAR → eyes_shut?  → if shut, DO NOT update the cursor
+  ├─ blink edge detect
+  ├─ aim_px   = button_assist(gaze)        # only near the button strip
+  ├─ steer_px = food_assist(gaze)          # only inside the play area
+  ├─ buttons.update(aim_px) → locked?
+  ├─ blink + locked → press (RESTART / QUIT)
+  ├─ steer(steer_px)  unless dead, out of zone, or on a button
+  ├─ step() every TICK, once grace has elapsed and in zone
+  └─ draw board, buttons, HUD, intent line, cursor</code></pre>
+    <div class="note"><strong>Ordering matters.</strong> Buttons are resolved before steering so a
+      blink meant for a button cannot also swing the snake, and the cursor freeze happens before
+      anything reads the cursor.</div>
+  </section>
+
+  <footer>
+    <div>Milestone 9 · Gaze Snake · cheat sheet and technical reference · 2026-07-21</div>
+    <div>Project-wide detail: <code>TECHNICAL_DOCUMENTATION.md</code> · concepts: <code>cheatsheet.html</code></div>
+    <div>To save as PDF: Ctrl+P → Destination “Save as PDF” → Background graphics on.</div>
+  </footer>
+
+</div>

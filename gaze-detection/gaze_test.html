@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gaze Pipe Test — Phase 1</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden;
+    background: radial-gradient(circle at 50% 40%, #10202b, #060a0e 70%);
+    font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; color: #cfe8ec; }
+
+  /* The gaze dot */
+  #dot {
+    position: fixed; top: 0; left: 0; width: 46px; height: 46px;
+    margin: -23px 0 0 -23px; border-radius: 50%;
+    border: 2px solid rgba(120, 240, 245, 0.9);
+    background: radial-gradient(circle, rgba(120,240,245,0.55), rgba(120,240,245,0.05) 70%);
+    box-shadow: 0 0 22px 6px rgba(80, 220, 230, 0.35);
+    pointer-events: none; transition: opacity .15s;
+    /* transform is set from JS; keep it snappy */
+  }
+  #dot.lost { opacity: 0; }
+
+  /* crosshair center */
+  #dot::after { content:""; position:absolute; inset:50% auto auto 50%;
+    width:4px; height:4px; margin:-2px 0 0 -2px; border-radius:50%; background:#eafeff; }
+
+  /* HUD */
+  #hud {
+    position: fixed; top: 18px; left: 18px; z-index: 10;
+    background: rgba(6, 14, 19, 0.82); border: 1px solid rgba(90, 160, 170, 0.28);
+    border-radius: 12px; padding: 16px 18px; min-width: 250px;
+    backdrop-filter: blur(6px); font-size: 13px; line-height: 1.7;
+  }
+  #hud h1 { margin: 0 0 10px; font-size: 14px; letter-spacing: .5px;
+    color: #9fe9ef; font-weight: 700; }
+  .row { display: flex; justify-content: space-between; gap: 20px; }
+  .k { color: #6f97a0; } .v { color: #eafeff; }
+  #status { font-weight: 700; }
+  .ok  { color: #56e39f; } .warn { color: #ffcf5c; } .err { color: #ff6d6d; }
+  #hint { margin-top: 12px; font-size: 11px; color: #6f97a0; line-height: 1.5; }
+
+  /* faint corner + center guides so you can judge accuracy */
+  .guide { position: fixed; width: 12px; height: 12px; border: 1px solid rgba(120,200,210,.25);
+    border-radius: 50%; pointer-events: none; }
+  .g-tl{top:8%;left:8%}.g-tr{top:8%;right:8%}.g-bl{bottom:8%;left:8%}
+  .g-br{bottom:8%;right:8%}.g-c{top:50%;left:50%;margin:-6px 0 0 -6px}
+</style>
+</head>
+<body>
+  <div class="guide g-tl"></div><div class="guide g-tr"></div>
+  <div class="guide g-bl"></div><div class="guide g-br"></div><div class="guide g-c"></div>
+
+  <div id="dot" class="lost"></div>
+
+  <div id="hud">
+    <h1>GAZE PIPE — PHASE 1</h1>
+    <div class="row"><span class="k">Socket</span><span class="v" id="status">connecting…</span></div>
+    <div class="row"><span class="k">Face</span><span class="v" id="face">—</span></div>
+    <div class="row"><span class="k">gaze x</span><span class="v" id="gx">—</span></div>
+    <div class="row"><span class="k">gaze y</span><span class="v" id="gy">—</span></div>
+    <div class="row"><span class="k">msgs/sec</span><span class="v" id="rate">0</span></div>
+    <div id="hint">Look at the 5 ring guides to sanity-check accuracy.<br>
+      Dot fades out when no face is detected.</div>
+  </div>
+
+<script>
+  const WS_URL = "ws://localhost:8765";
+
+  const dot    = document.getElementById("dot");
+  const elStat = document.getElementById("status");
+  const elFace = document.getElementById("face");
+  const elGX   = document.getElementById("gx");
+  const elGY   = document.getElementById("gy");
+  const elRate = document.getElementById("rate");
+
+  let msgCount = 0;
+  setInterval(() => { elRate.textContent = msgCount; msgCount = 0; }, 1000);
+
+  function setStatus(text, cls) { elStat.textContent = text; elStat.className = "v " + cls; }
+
+  function connect() {
+    setStatus("connecting…", "warn");
+    const ws = new WebSocket(WS_URL);
+
+    ws.onopen = () => setStatus("connected", "ok");
+
+    ws.onmessage = (ev) => {
+      msgCount++;
+      let m;
+      try { m = JSON.parse(ev.data); } catch { return; }
+      if (m.type !== "gaze") return;
+
+      if (m.ok) {
+        elFace.textContent = "detected";  elFace.className = "v ok";
+        elGX.textContent = m.x.toFixed(3);
+        elGY.textContent = m.y.toFixed(3);
+        // Map normalized [0,1] → viewport pixels. (Fullscreen the tab for the
+        // truest mapping — calibration was done against the whole screen.)
+        const px = m.x * window.innerWidth;
+        const py = m.y * window.innerHeight;
+        dot.style.transform = `translate(${px}px, ${py}px)`;
+        dot.classList.remove("lost");
+      } else {
+        elFace.textContent = "no face / out of zone"; elFace.className = "v warn";
+        dot.classList.add("lost");
+      }
+    };
+
+    ws.onclose = () => {
+      setStatus("disconnected — retrying", "err");
+      dot.classList.add("lost");
+      setTimeout(connect, 1000);   // auto-reconnect (e.g. after restarting the server)
+    };
+    ws.onerror = () => ws.close();
+  }
+
+  connect();
+</script>
+</body>
+</html>
