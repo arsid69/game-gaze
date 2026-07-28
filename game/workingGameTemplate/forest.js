@@ -619,6 +619,14 @@ window.__forest = {
   get hovered() { return hovered; },
   setGaze(x, y) { rawX = x; rawY = y; faceOk = true; },
   setCollectEnabled(v) { collectEnabled = v; },
+  emote(name) { if (archerObj) archerPlay(name); },   // trigger an archer animation (e.g. emote-yes)
+  reset() {                                            // full replay: respawn orbs, clear progress
+    gameWon = false; collected = 0; hovered = null;
+    for (const orb of dataNodes) { scene.remove(orb); if (orb.userData && orb.userData.label) orb.userData.label.remove(); }
+    dataNodes.length = 0; selectables.length = 0;
+    createDataNodes();
+    collectEnabled = false;
+  },
 };
 
 addEventListener("resize", () => {

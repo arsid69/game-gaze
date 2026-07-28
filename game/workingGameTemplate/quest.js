@@ -14,7 +14,7 @@
   const setButtons = (els) => { const d = F() && F().domTargets; if (!d) return; d.length = 0; els.forEach((e) => d.push(e)); };
   const clearButtons = () => { const d = F() && F().domTargets; if (d) d.length = 0; };
   const drop = (id) => { const e = document.getElementById(id); if (e) e.remove(); };
-  const dropAll = () => ["q-steps", "q-skye", "q-clean"].forEach(drop);
+  const dropAll = () => ["q-steps", "q-skye", "q-clean", "q-train", "q-accuracy"].forEach(drop);
 
   const STEPS = [
     { name: "Collect Data", desc: "Gather data from the forest" },
@@ -74,6 +74,27 @@
     .q-card.discard .q-card-state{color:#f0736d}
     .q-card.gz-hover{outline:3px solid #6ff0f5;outline-offset:3px;box-shadow:0 0 16px rgba(110,240,245,.5)}`;
   document.head.appendChild(style);
+
+  const style2 = document.createElement("style");
+  style2.textContent = `
+    #q-train, #q-accuracy{background:radial-gradient(circle at 50% 40%,#10222c,#05111a 80%)}
+    .q-panel{width:min(640px,94vw);background:linear-gradient(180deg,#12242c,#0a1820);border:1px solid rgba(120,240,245,.25);
+      border-radius:22px;padding:26px 28px;box-shadow:0 24px 64px rgba(0,0,0,.55)}
+    .q-panel-title{font-family:system-ui,"Segoe UI",sans-serif;font-size:clamp(20px,3.4vw,30px);font-weight:800;margin:6px 0 8px;line-height:1.15;text-wrap:balance}
+    .q-panel-sub{color:#9fc4cc;font-size:14px;line-height:1.5;max-width:52ch;margin:0 auto}
+    .q-btnrow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+    .q-testviz{font-size:44px;margin:18px 0 6px}
+    .q-spin{width:44px;height:44px;margin:22px auto 6px;border:4px solid rgba(120,240,245,.25);border-top-color:#6ff0f5;border-radius:50%;animation:qspin .8s linear infinite}
+    @keyframes qspin{to{transform:rotate(360deg)}}
+    .q-acc-big{font-family:system-ui,"Segoe UI",sans-serif;font-weight:800;font-size:64px;line-height:1;color:#6ff0f5;margin:8px 0}
+    .q-acc-big span{font-size:28px;color:#9fc4cc}
+    .q-acc-bar{position:relative;height:12px;background:rgba(255,255,255,.1);border-radius:7px;max-width:320px;margin:0 auto 16px}
+    .q-acc-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,#4fd8e0,#7ff0a0)}
+    .q-acc-suff{position:absolute;top:-4px;left:70%;width:2px;height:20px;background:#eafeff;opacity:.7}
+    .q-legend{display:flex;gap:18px;justify-content:center;font-size:12px;color:#9fc4cc;margin-top:8px}
+    .q-legend i{display:inline-block;width:14px;height:3px;margin-right:6px;vertical-align:middle;border-radius:2px}
+    @media (prefers-reduced-motion:reduce){.q-spin{animation:none}}`;
+  document.head.appendChild(style2);
 
   function mkBtn(text, onClick) {
     const b = document.createElement("button"); b.className = "q-btn"; b.textContent = text;
@@ -172,15 +193,143 @@
     const msg = perfect
       ? "Perfect — you kept every useful source and removed all the noise. That's exactly how you get a trustworthy model."
       : `You kept ${goodKept}/${totalGood} useful sources and left ${badKept} noisy one(s) in. Cleaner data means a more accurate model — you can always refine it.`;
-    skye([msg], "Continue", () => showSteps(3, "Continue", trainStub));
+    skye([msg], "Continue", () => showSteps(3, "Start Training", startTraining));
   }
 
-  // --- STEP 3/4 stub (built next) -------------------------------------
-  function trainStub() {
+  // ===== STEP 3: TRAIN & TEST =====
+  function bigPanel(id, innerHTML, btns) {
+    dropAll();
+    const l = document.createElement("div"); l.className = "q-layer"; l.id = id;
+    const box = document.createElement("div"); box.className = "q-panel";
+    box.innerHTML = innerHTML;
+    const row = document.createElement("div"); row.className = "q-btnrow";
+    const els = btns.map(([t, cb]) => { const b = mkBtn(t, cb); row.appendChild(b); return b; });
+    box.appendChild(row); l.appendChild(box); document.body.appendChild(l);
+    setButtons(els);
+  }
+
+  // Accuracy reflects how well the player cleaned the data in Step 2 (capped at 90%).
+  function computeAccuracy() {
+    const c = window.__questClean || { goodKept: 5, badKept: 0, totalGood: 5 };
+    const coverage = c.totalGood ? c.goodKept / c.totalGood : 0;
+    return Math.round(Math.max(0.35, Math.min(1, coverage - c.badKept * 0.15)) * 90);
+  }
+
+  function chartSVG(acc) {
+    const W = 320, H = 130, pad = 12, m = 12, actual = [], ai = [];
+    for (let i = 0; i < m; i++) {
+      const t = i / (m - 1);
+      const base = 0.28 + 0.5 * Math.sin(t * Math.PI) + 0.08 * Math.sin(t * 7);
+      actual.push(base);
+      ai.push(Math.max(0.02, Math.min(0.98, base + (1 - acc / 90) * Math.sin(i * 1.7) * 0.28)));
+    }
+    const pts = (a) => a.map((v, i) => `${(pad + i / (m - 1) * (W - 2 * pad)).toFixed(1)},${(H - pad - v * (H - 2 * pad)).toFixed(1)}`).join(" ");
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:360px;display:block;margin:14px auto 0">
+      <polyline points="${pts(actual)}" fill="none" stroke="#e8cf72" stroke-width="2.5"></polyline>
+      <polyline points="${pts(ai)}" fill="none" stroke="#6ff0f5" stroke-width="2.5" stroke-dasharray="5 3"></polyline>
+    </svg>
+    <div class="q-legend"><span><i style="background:#e8cf72"></i>Actual event</span><span><i style="background:#6ff0f5"></i>Your AI prediction</span></div>`;
+  }
+
+  function startTraining() {
     skye([
-      "Next: <b>Train the AI</b> on your cleaned data, then <b>Apply</b> the forecast to protect the marshes.",
-      "Those stages are coming next — great progress so far! 🌊",
-    ], "Back to quest", () => showSteps(3, "Continue", trainStub));
+      "Now let's <b>train and test</b> your model. Here's the key idea:",
+      "We must test it on data it has <b>NOT seen before</b> — otherwise it's like handing it the answers to a test. 🤔",
+    ], "Got it", askTestQuestion);
+  }
+
+  function askTestQuestion() {
+    bigPanel("q-train", `<div class="eyebrow">STEP 3 · TRAIN THE AI</div>
+      <div class="q-panel-title">Should we test your AI on data it has <u>already seen</u>?</div>
+      <div class="q-panel-sub">Think about what really shows whether it learned…</div>`,
+      [
+        ["Yes", () => skye(["Not quite — if the AI has already seen the data, it's like giving it the answers. We need to see if it can handle <b>new</b> problems before the real world."], "I see", showTesting)],
+        ["No", () => skye(["Exactly! Testing on <b>new</b> data it never saw is the only way to know if your model truly learned to predict floods."], "Let's test", showTesting)],
+      ]);
+  }
+
+  function showTesting() {
+    bigPanel("q-train", `<div class="eyebrow">STEP 3 · AI MODEL TESTING</div>
+      <div class="q-panel-title">Test your flood model</div>
+      <div class="q-panel-sub">Run your model against months it never saw, and compare its forecast to what actually happened.</div>
+      <div class="q-testviz">🌊📈</div>`,
+      [["Test Model", runTest]]);
+  }
+
+  function runTest() {
+    bigPanel("q-train", `<div class="eyebrow">STEP 3 · TESTING…</div>
+      <div class="q-panel-title">Running your model…</div><div class="q-spin"></div>`, []);
+    setTimeout(() => showAccuracy(computeAccuracy()), 1500);
+  }
+
+  function showAccuracy(acc) {
+    window.__questAccuracy = acc;
+    const msg = acc >= 80
+      ? "Your accuracy is in the 70–90% range — that's great! Your model is reliable enough for real-world use. (The max is 90% — no forecast is ever 100% certain.)"
+      : acc >= 55
+      ? `${acc}% — decent, but noisy data is dragging it down. Cleaner data would push this higher.`
+      : `${acc}% — the model can't find a reliable signal. Too much noise, or too little good data, went in.`;
+    bigPanel("q-accuracy", `<div class="eyebrow">STEP 3 · FORECAST ACCURACY</div>
+      <div class="q-acc-big">${acc}<span>%</span></div>
+      <div class="q-acc-bar"><div class="q-acc-fill" style="width:${acc}%"></div><div class="q-acc-suff"></div></div>
+      ${chartSVG(acc)}
+      <div class="q-panel-sub" style="margin-top:16px">${msg}</div>`,
+      [
+        ["Improve (re-clean)", showCleaning],
+        ["Generate Forecast →", () => showSteps(4, "Deploy the forecast", startApply)],
+      ]);
+  }
+
+  // ===== STEP 4: APPLY / DEPLOY =====
+  function startApply() {
+    skye([
+      "Your model is trained and tested — now let's <b>deploy it</b> to protect Market Marshes! 🌊",
+      "We'll generate the flood forecast and put your early-warning system live.",
+    ], "Deploy it", deployScreen);
+  }
+
+  function deployScreen() {
+    bigPanel("q-train", `<div class="eyebrow">STEP 4 · APPLY</div>
+      <div class="q-panel-title">Deploy the flood forecast</div>
+      <div class="q-panel-sub">Push your model live so the marshes get warned before the water rises.</div>
+      <div class="q-testviz">📡🌊</div>`,
+      [["Deploy Forecast", runDeploy]]);
+  }
+
+  function runDeploy() {
+    bigPanel("q-train", `<div class="eyebrow">STEP 4 · DEPLOYING…</div>
+      <div class="q-panel-title">Going live…</div><div class="q-spin"></div>`, []);
+    setTimeout(showOutcome, 1600);
+  }
+
+  function showOutcome() {
+    const acc = window.__questAccuracy != null ? window.__questAccuracy : computeAccuracy();
+    let tag, head, body;
+    if (acc >= 80) {
+      tag = "DEPLOYED"; head = "Early-warning system is live! 🎉";
+      body = "Your model reliably flags high-risk zones and warns the marshes well before peak rainfall — real time to evacuate before the water rises. Market Marshes is safe.";
+      if (F() && F().emote) F().emote("emote-yes");
+    } else if (acc >= 55) {
+      tag = "PARTIALLY DEPLOYED"; head = "Warnings issued — but not fully trusted.";
+      body = "Noisy data limited your model's lead time and confidence, so some warnings arrive late. Cleaning the dataset further would protect more of the marshes.";
+    } else {
+      tag = "NOT DEPLOYABLE"; head = "Predictions aren't reliable enough.";
+      body = "The forecast can't warn communities in time. Head back, clean the dataset, and retrain.";
+    }
+    bigPanel("q-accuracy", `<div class="eyebrow">MARKET MARSHES · ${tag}</div>
+      <div class="q-panel-title">${head}</div>
+      <div class="q-panel-sub" style="margin:6px auto 16px">${body}</div>
+      <div class="q-acc-big" style="font-size:46px">${acc}<span>%</span></div>
+      <div class="q-panel-sub">final forecast accuracy · quest complete</div>`,
+      acc >= 80
+        ? [["Play Again", replayQuest]]
+        : [["Improve data", showCleaning], ["Play Again", replayQuest]]);
+  }
+
+  function replayQuest() {
+    if (F() && F().reset) F().reset();
+    window.__questClean = null; window.__questAccuracy = null;
+    start();
   }
 
   (function boot() { if (F() && F().domTargets) start(); else setTimeout(boot, 120); })();
