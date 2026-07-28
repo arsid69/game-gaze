@@ -14,7 +14,7 @@
   const setButtons = (els) => { const d = F() && F().domTargets; if (!d) return; d.length = 0; els.forEach((e) => d.push(e)); };
   const clearButtons = () => { const d = F() && F().domTargets; if (d) d.length = 0; };
   const drop = (id) => { const e = document.getElementById(id); if (e) e.remove(); };
-  const dropAll = () => ["q-steps", "q-skye", "q-clean", "q-train", "q-accuracy"].forEach(drop);
+  const dropAll = () => ["q-steps", "q-skye", "q-clean", "q-train", "q-accuracy", "q-apply", "q-complete"].forEach(drop);
 
   const STEPS = [
     { name: "Collect Data", desc: "Gather data from the forest" },
@@ -93,7 +93,25 @@
     .q-acc-suff{position:absolute;top:-4px;left:70%;width:2px;height:20px;background:#eafeff;opacity:.7}
     .q-legend{display:flex;gap:18px;justify-content:center;font-size:12px;color:#9fc4cc;margin-top:8px}
     .q-legend i{display:inline-block;width:14px;height:3px;margin-right:6px;vertical-align:middle;border-radius:2px}
-    @media (prefers-reduced-motion:reduce){.q-spin{animation:none}}`;
+    @media (prefers-reduced-motion:reduce){.q-spin{animation:none}}
+    /* Apply stage — see-through overlays so the 3D flood shows behind */
+    #q-apply{background:rgba(4,10,16,.42)!important;align-items:flex-end}
+    .q-hud{margin-bottom:12vh;background:rgba(6,16,22,.8);border:1px solid rgba(120,240,245,.3);border-radius:14px;padding:16px 26px;backdrop-filter:blur(4px)}
+    .q-hud-line{font-size:clamp(16px,2.4vw,22px);font-weight:600;color:#eafeff}
+    #q-complete{background:rgba(4,10,16,.5)!important}
+    .q-complete-box{width:min(560px,94vw);background:linear-gradient(180deg,rgba(18,36,44,.94),rgba(10,24,30,.94));
+      border:1px solid rgba(120,240,245,.3);border-radius:22px;padding:26px 28px;box-shadow:0 24px 64px rgba(0,0,0,.6)}
+    .q-badge{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.16em;padding:5px 12px;border-radius:999px;margin-bottom:8px}
+    .q-badge.good{background:rgba(63,207,144,.18);color:#7ff0a0;border:1px solid rgba(63,207,144,.5)}
+    .q-badge.mid{background:rgba(224,178,92,.18);color:#e8cf72;border:1px solid rgba(224,178,92,.5)}
+    .q-badge.bad{background:rgba(240,115,109,.18);color:#f0736d;border:1px solid rgba(240,115,109,.5)}
+    .q-stats{display:flex;gap:10px;justify-content:center;margin:16px 0 6px;flex-wrap:wrap}
+    .q-stat{background:rgba(10,24,30,.8);border:1px solid rgba(120,240,245,.18);border-radius:12px;padding:12px 16px;min-width:96px}
+    .q-stat b{display:block;font-family:system-ui,sans-serif;font-size:26px;color:#6ff0f5;line-height:1}
+    .q-stat span{font-size:11px;color:#9fc4cc;letter-spacing:.04em}
+    .q-conf{position:fixed;inset:0;pointer-events:none;z-index:79;overflow:hidden}
+    .q-conf i{position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;animation:qfall linear forwards}
+    @keyframes qfall{to{transform:translateY(108vh) rotate(720deg);opacity:.9}}`;
   document.head.appendChild(style2);
 
   function mkBtn(text, onClick) {
@@ -283,50 +301,105 @@
   // ===== STEP 4: APPLY / DEPLOY =====
   function startApply() {
     skye([
-      "Your model is trained and tested — now let's <b>deploy it</b> to protect Market Marshes! 🌊",
-      "We'll generate the flood forecast and put your early-warning system live.",
-    ], "Deploy it", deployScreen);
+      "Your model is trained and ready — now let's <b>deploy it</b> to protect Market Marshes. 🌊",
+      "First, generate the flood forecast so we know when the water will rise.",
+    ], "Generate forecast", forecastScreen);
   }
 
-  function deployScreen() {
-    bigPanel("q-train", `<div class="eyebrow">STEP 4 · APPLY</div>
-      <div class="q-panel-title">Deploy the flood forecast</div>
-      <div class="q-panel-sub">Push your model live so the marshes get warned before the water rises.</div>
-      <div class="q-testviz">📡🌊</div>`,
-      [["Deploy Forecast", runDeploy]]);
+  function riskChart(acc) {
+    const W = 320, H = 120, pad = 12, m = 12, risk = [];
+    for (let i = 0; i < m; i++) risk.push(0.15 + 0.8 * Math.pow(Math.sin((i / (m - 1)) * Math.PI), 1.4));
+    const bw = (W - 2 * pad) / m - 4;
+    const bars = risk.map((v, i) => {
+      const x = pad + i * ((W - 2 * pad) / m), h = v * (H - 2 * pad), y = H - pad - h;
+      const col = v > 0.6 ? "#f0736d" : v > 0.35 ? "#e8cf72" : "#4fd8e0";
+      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${col}"></rect>`;
+    }).join("");
+    const warnY = (H - pad - 0.6 * (H - 2 * pad)).toFixed(1);
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:360px;display:block;margin:14px auto 2px">
+      ${bars}<line x1="${pad}" y1="${warnY}" x2="${W - pad}" y2="${warnY}" stroke="#eafeff" stroke-dasharray="4 3" stroke-width="1"></line>
+    </svg>
+    <div class="q-legend"><span style="color:#eafeff">- - warning threshold</span><span>bars = predicted flood risk / month</span></div>`;
   }
 
-  function runDeploy() {
-    bigPanel("q-train", `<div class="eyebrow">STEP 4 · DEPLOYING…</div>
-      <div class="q-panel-title">Going live…</div><div class="q-spin"></div>`, []);
-    setTimeout(showOutcome, 1600);
-  }
-
-  function showOutcome() {
+  function forecastScreen() {
     const acc = window.__questAccuracy != null ? window.__questAccuracy : computeAccuracy();
-    let tag, head, body;
-    if (acc >= 80) {
-      tag = "DEPLOYED"; head = "Early-warning system is live! 🎉";
-      body = "Your model reliably flags high-risk zones and warns the marshes well before peak rainfall — real time to evacuate before the water rises. Market Marshes is safe.";
-      if (F() && F().emote) F().emote("emote-yes");
-    } else if (acc >= 55) {
-      tag = "PARTIALLY DEPLOYED"; head = "Warnings issued — but not fully trusted.";
-      body = "Noisy data limited your model's lead time and confidence, so some warnings arrive late. Cleaning the dataset further would protect more of the marshes.";
-    } else {
-      tag = "NOT DEPLOYABLE"; head = "Predictions aren't reliable enough.";
-      body = "The forecast can't warn communities in time. Head back, clean the dataset, and retrain.";
+    bigPanel("q-train", `<div class="eyebrow">STEP 4 · GENERATE FORECAST</div>
+      <div class="q-panel-title">Flood-risk forecast</div>
+      <div class="q-panel-sub">Your model projects flood risk across the monsoon season. Risk climbs past the warning line — issue the early warning.</div>
+      ${riskChart(acc)}`,
+      [["Issue Early Warning", () => deploySequence(acc)]]);
+  }
+
+  function deploySequence(acc) {
+    if (F() && F().startFlood) F().startFlood(acc >= 80);   // 3D rain + rising floodwater
+    hudSequence([
+      "🌧️ Monsoon rains arriving over Market Marshes…",
+      "📊 Forecasting river levels for the days ahead…",
+      "📡 Early-warning system broadcasting to the marshes…",
+    ], 0, () => questComplete(acc));
+  }
+
+  function hudSequence(lines, i, done) {
+    dropAll();
+    const l = document.createElement("div"); l.className = "q-layer"; l.id = "q-apply";
+    l.innerHTML = `<div class="q-hud"><div class="q-hud-line">${lines[i]}</div></div>`;
+    document.body.appendChild(l);
+    setTimeout(() => (i + 1 < lines.length ? hudSequence(lines, i + 1, done) : done()), 1700);
+  }
+
+  function confetti() {
+    const c = document.createElement("div"); c.className = "q-conf"; c.id = "q-conf";
+    const cols = ["#6ff0f5", "#7ff0a0", "#e8cf72", "#f4a58e", "#b79cf0"];
+    for (let i = 0; i < 90; i++) {
+      const p = document.createElement("i");
+      p.style.left = Math.random() * 100 + "vw";
+      p.style.background = cols[i % cols.length];
+      p.style.animationDuration = (1.8 + Math.random() * 1.8) + "s";
+      p.style.animationDelay = (Math.random() * 0.6) + "s";
+      c.appendChild(p);
     }
-    bigPanel("q-accuracy", `<div class="eyebrow">MARKET MARSHES · ${tag}</div>
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 4400);
+  }
+
+  function questComplete(acc) {
+    const c = window.__questClean || { goodKept: 5, badKept: 0, totalGood: 5 };
+    const removed = 3 - c.badKept;   // 3 noisy sources total
+    let cls, tag, head, body;
+    if (acc >= 80) {
+      cls = "good"; tag = "MARKET MARSHES · DEPLOYED"; head = "The marshes are safe! 🎉";
+      body = "Your early-warning system flagged the flood well before peak rainfall — communities had real time to evacuate before the water rose, and the waters receded.";
+      if (F() && F().emote) F().emote("emote-yes");
+      confetti();
+    } else if (acc >= 55) {
+      cls = "mid"; tag = "MARKET MARSHES · PARTIAL"; head = "Warnings issued — but late.";
+      body = "Noisy data cost precious lead time, so the flood caught part of the marshes. Cleaner data would protect more next time.";
+    } else {
+      cls = "bad"; tag = "MARKET MARSHES · AT RISK"; head = "The forecast wasn't reliable enough.";
+      body = "The warnings came too late to trust. Head back, clean the dataset, and retrain to protect the marshes.";
+    }
+    dropAll();
+    const l = document.createElement("div"); l.className = "q-layer"; l.id = "q-complete";
+    const box = document.createElement("div"); box.className = "q-complete-box";
+    box.innerHTML = `<div class="q-badge ${cls}">${tag}</div>
       <div class="q-panel-title">${head}</div>
-      <div class="q-panel-sub" style="margin:6px auto 16px">${body}</div>
-      <div class="q-acc-big" style="font-size:46px">${acc}<span>%</span></div>
-      <div class="q-panel-sub">final forecast accuracy · quest complete</div>`,
-      acc >= 80
-        ? [["Play Again", replayQuest]]
-        : [["Improve data", showCleaning], ["Play Again", replayQuest]]);
+      <div class="q-panel-sub" style="margin:6px auto 4px">${body}</div>
+      <div class="q-stats">
+        <div class="q-stat"><b>8</b><span>data collected</span></div>
+        <div class="q-stat"><b>${removed}/3</b><span>noise removed</span></div>
+        <div class="q-stat"><b>${acc}%</b><span>accuracy</span></div>
+      </div>`;
+    const row = document.createElement("div"); row.className = "q-btnrow";
+    const btns = (acc >= 80 ? [["Play Again", replayQuest]] : [["Improve data", showCleaning], ["Play Again", replayQuest]])
+      .map(([t, cb]) => { const b = mkBtn(t, cb); row.appendChild(b); return b; });
+    box.appendChild(row); l.appendChild(box); document.body.appendChild(l);
+    setButtons(btns);
   }
 
   function replayQuest() {
+    const conf = document.getElementById("q-conf"); if (conf) conf.remove();
+    if (F() && F().stopFlood) F().stopFlood();
     if (F() && F().reset) F().reset();
     window.__questClean = null; window.__questAccuracy = null;
     start();

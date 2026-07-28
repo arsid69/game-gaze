@@ -598,6 +598,43 @@ function updateGaze() {
   gzCharge.setAttribute("stroke-dashoffset", C2 * (1 - progress));
 }
 
+// ===== FLOOD + RAIN — the Apply-stage payoff =====
+let floodWater = null, rain = null, flood = null;
+function startFlood(protectedOutcome) {
+  if (!floodWater) {
+    floodWater = new THREE.Mesh(new THREE.PlaneGeometry(180, 100),
+      new THREE.MeshStandardMaterial({ color: 0x2f7fb0, transparent: true, opacity: 0.6, roughness: 0.15, metalness: 0.35 }));
+    floodWater.rotation.x = -Math.PI / 2;
+    scene.add(floodWater);
+  }
+  if (!rain) {
+    const N = 2600, p = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) { p[i * 3] = rand(-45, 45); p[i * 3 + 1] = rand(0, 32); p[i * 3 + 2] = rand(-22, 14); }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(p, 3));
+    rain = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xbcd8ff, size: 0.1, transparent: true, opacity: 0.65, sizeAttenuation: true }));
+    scene.add(rain);
+  }
+  rain.visible = true; floodWater.visible = true; floodWater.position.y = -8;
+  flood = { t: 0, phase: "rise", prot: !!protectedOutcome, peak: protectedOutcome ? 0.7 : 1.8 };
+}
+function stopFlood() { if (rain) rain.visible = false; if (floodWater) floodWater.visible = false; flood = null; }
+function updateFlood(dt) {
+  if (!flood) return;
+  const p = rain.geometry.attributes.position;
+  for (let i = 0; i < p.count; i++) { let y = p.getY(i) - dt * 24; if (y < -1) y = rand(20, 32); p.setY(i, y); }
+  p.needsUpdate = true;
+  if (flood.phase === "rise") {
+    flood.t = Math.min(1, flood.t + dt * 0.4);
+    floodWater.position.y = lerp(-8, flood.peak, flood.t);
+    if (flood.t >= 1) { flood.phase = flood.prot ? "recede" : "hold"; flood.t = 0; }
+  } else if (flood.phase === "recede") {
+    flood.t = Math.min(1, flood.t + dt * 0.4);
+    floodWater.position.y = lerp(flood.peak, -4, flood.t);
+    if (flood.t >= 1) { flood.phase = "done"; rain.visible = false; }
+  }
+  floodWater.material.opacity = 0.5 + Math.sin(performance.now() * 0.003) * 0.06;
+}
+
 // --- Render loop -----------------------------------------------------
 const clock = new THREE.Clock();
 function animate() {
@@ -608,6 +645,7 @@ function animate() {
   updateGaze();
   updateDataNodes(dt);
   updateParticles(dt);
+  updateFlood(dt);
   renderer.render(scene, camera);
 }
 animate();
@@ -620,7 +658,10 @@ window.__forest = {
   setGaze(x, y) { rawX = x; rawY = y; faceOk = true; },
   setCollectEnabled(v) { collectEnabled = v; },
   emote(name) { if (archerObj) archerPlay(name); },   // trigger an archer animation (e.g. emote-yes)
+  startFlood(p) { startFlood(p); },                   // Apply payoff: rain + rising floodwater
+  stopFlood() { stopFlood(); },
   reset() {                                            // full replay: respawn orbs, clear progress
+    stopFlood();
     gameWon = false; collected = 0; hovered = null;
     for (const orb of dataNodes) { scene.remove(orb); if (orb.userData && orb.userData.label) orb.userData.label.remove(); }
     dataNodes.length = 0; selectables.length = 0;
