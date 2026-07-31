@@ -75,8 +75,8 @@ gaze-detection/models/l2cs_gaze360.onnx      # ~91 MB — exported ONNX model (w
 ### Step 1 — Clone and enter the project
 
 ```powershell
-git clone <your-repo-url> "game integration"
-cd "game integration\gaze-detection"
+git clone https://github.com/arsid69/game-gaze.git
+cd game-gaze\gaze-detection
 ```
 
 ### Step 2 — Create and activate the virtual environment
@@ -103,6 +103,13 @@ pip install -r requirements.txt --extra-index-url https://download.pytorch.org/w
 If `torch` still fails, install it separately first and then re-run the line above:
 ```powershell
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+```
+
+**No DirectX 12 GPU?** Swap the ONNX runtime for the CPU build — everything still works, just slower
+(~104 ms per frame instead of ~15 ms):
+```powershell
+pip uninstall -y onnxruntime-directml
+pip install onnxruntime
 ```
 
 The two GitHub packages (`l2cs`, `face-detection`) are already listed in
@@ -228,10 +235,14 @@ python -m http.server 8000
 1. Press **`F`** → fullscreen. **Do not skip this.** Calibration maps your gaze to the whole
    physical screen; a windowed viewport is smaller and pushed down by the browser chrome, so
    the cursor lands off by the height of the toolbar. It also unlocks sound.
-2. Look at the **middle of the screen**, then press **`C`** → recenters the cursor on your eyes.
+2. Press **`C`** → recenter. **The two games differ here:**
+   - **3D forest** (`forest.html`) — a yellow **LOOK HERE** target appears. Keep your eyes on it
+     until it disappears (~1.3 s); the offset is captured at the end of that hold.
+   - **2D quest** (`index.html`) — look at the middle of the screen *first*, then press `C`.
+     The offset is captured the instant you press the key.
 
 Then look at an orb or button and **hold still for ~1 second** — a ring charges around the
-cursor and it clicks.
+cursor and it activates.
 
 ### Controls
 
@@ -241,10 +252,19 @@ cursor and it clicks.
 | `F` | Fullscreen on / off (also enables sound) |
 | `C` | Recenter — press whenever the cursor feels shifted |
 | `G` | Gaze control off / on (mouse still works) |
-| Mouse drag | Orbit the camera (3D forest) |
+| Mouse drag / click | Orbit the camera (3D forest); works as a fallback everywhere |
 | Scroll | Zoom (3D forest) |
-| Look at left/right edge | Pan the field (2D Collect stage) |
+| Look at left/right edge | **3D:** turn the forest to find more orbs · **2D:** pan the Collect field |
 | Look at top/bottom edge | Scroll a long page |
+
+### The quest — 4 steps
+
+1. **Collect Data** — turn through the night forest and collect the glowing data orbs.
+2. **Clean Data** — discard the noisy or irrelevant sources (look at a card and hold to toggle
+   keep ↔ discard).
+3. **Train AI** — answer Professor Skye's train/test question, then test the model.
+   **Your final accuracy depends on how well you cleaned the data** — up to 90%.
+4. **Apply** — deploy the forecast and protect Market Marshes.
 
 ---
 
@@ -253,6 +273,8 @@ cursor and it clicks.
 | Symptom | Fix |
 |---|---|
 | Blank page / nothing loads | The game server (Terminal 2) isn't running, or you opened the file directly instead of `http://localhost:8000/forest.html` |
+| Stuck forever on **"LOADING FOREST…"** | You double-clicked the file and are on `file:///C:/...`. Browsers refuse ES modules over `file://`. Use `http://localhost:8000/forest.html` |
+| Your edits to the game don't show up | Hard-reload: **Ctrl + Shift + R**. A normal reload serves the cached copy |
 | `ERROR: models/calibration_model.pkl not found` | Run `python milestone4_calibration.py` (Step 8) |
 | `ERROR: could not open webcam at index 0` | Another app (Teams, Zoom, a previous `gaze_server.py`) holds the camera. Close it, or change `CAM_INDEX` in `gaze_server.py` |
 | Cursor is in the wrong place | You're not fullscreen — press `F`, then look at centre and press `C` |
@@ -260,12 +282,23 @@ cursor and it clicks.
 | Chip bottom-left shows `face: —` | Check the gaze server window is still running and your face is lit and in frame |
 | `socket: disconnected` | Terminal 1 died or was Ctrl+C'd — restart it; the browser reconnects automatically |
 | Really shaky or laggy | Close every other game tab; only one should be open |
+| Gaze feels sluggish generally | Check the gaze server's first line: `[gaze_pipeline] ONNX running on: DmlExecutionProvider`. If it says `CPUExecutionProvider`, install `onnxruntime-directml` |
 | No sound | Browsers require a key-press first — hit `F` once |
-| Port 8000 or 8765 already in use | Kill the old process, or change `PORT` in `gaze_server.py` (and `WS_URL` in `gaze-client.js` / `GAZE_WS` in `forest.js`) |
+| Port 8000 or 8765 already in use (`Errno 10048`) | Stop the old server, or change `PORT` in `gaze_server.py` (and `WS_URL` in `gaze-client.js` / `GAZE_WS` in `forest.js`) |
 
 ### When you're finished
 
 Press **Ctrl + C** in **both** PowerShell windows. This frees the webcam and the ports.
+
+If a window is unresponsive, force-stop everything:
+```powershell
+taskkill /F /IM python.exe
+```
+
+Then confirm both ports are actually free — **no output means all clear**:
+```powershell
+netstat -ano | findstr LISTENING | findstr "8000 8765"
+```
 
 ---
 

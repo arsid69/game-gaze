@@ -23,6 +23,12 @@ gaze-detection/models/l2cs_gaze360.onnx
 gaze-detection/models/L2CSNet_gaze360.pkl
 gaze-detection/face_landmarker.task
 
+# Per-person calibration — valid only for the eyes, laptop and seating position
+# that recorded it. Each player generates their own with milestone4_calibration.py
+# (README step 8), so shipping one is useless to everybody else.
+gaze-detection/models/calibration_model.pkl
+gaze-detection/models/camera_focal.json
+
 # Editors
 .vscode/
 .idea/
