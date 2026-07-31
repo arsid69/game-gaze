@@ -21,7 +21,7 @@
   "use strict";
 
   // --- Tunables --------------------------------------------------------
-  const WS_URL       = "ws://localhost:8765";
+  // Socket URL now lives in input-manager.js, the only WebSocket client.
   const HOVER_PAD    = 85;    // gaze within this many px of a button (edge) targets it
   const MAGNET       = 0.15;  // gentle settle toward a targeted button (0 = none, 1 = snap)
   const HYSTERESIS   = 60;    // stickiness: current target keeps a px bonus so it doesn't flicker to a neighbor
@@ -96,9 +96,17 @@
   const chip = document.createElement("div");
   chip.id = "gaze-chip"; document.body.appendChild(chip);
   function setChip(sock) {
-    const mode = enabled ? `<span class="on">ON</span>` : `<span class="off">OFF</span>`;
+    const gi = window.GameInput;
+    const on = enabled ? `<span class="on">ON</span>` : `<span class="off">OFF</span>`;
     const fs = document.fullscreenElement ? "" : `   <span class="warn">press [f] to fullscreen</span>`;
-    chip.innerHTML = `GAZE ${mode}   socket:<b>${sock}</b>   face:<b>${faceOk ? "yes" : "—"}</b>${fs}\n[f] fullscreen   [c] recenter (look at middle)   [g] toggle`;
+    // Gesture modes care about the hand, gaze mode about the face.
+    const tracked = gi && gi.mode !== "gaze"
+      ? `hand:<b>${gi.handOk ? "yes" : "—"}</b>`
+      : `face:<b>${faceOk ? "yes" : "—"}</b>`;
+    const activate = gi && gi.mode !== "gaze" ? "pinch to click" : "hold gaze to click";
+    chip.innerHTML = `INPUT <b>${gi ? gi.modeLabel() : "GAZE"}</b>   control ${on}   `
+      + `socket:<b>${sock}</b>   ${tracked}${fs}\n`
+      + `[m] input mode   [f] fullscreen   [c] recenter   [g] toggle   ·   ${activate}`;
   }
 
   // --- Targets = enabled, on-screen buttons ----------------------------
@@ -164,6 +172,7 @@
   // --- Loop ------------------------------------------------------------
   function frame() {
     requestAnimationFrame(frame);
+    syncInput();                 // pull the active device's cursor for this frame
     if (!enabled || !faceOk) {
       cursor.classList.add("lost");
       chargeEl.setAttribute("stroke-dashoffset", CIRC);
@@ -171,9 +180,12 @@
       return;
     }
 
-    // Apply the manual recenter offset, then map to viewport pixels.
-    const gx = Math.min(Math.max(rawX - driftX, 0), 1);
-    const gy = Math.min(Math.max(rawY - driftY, 0), 1);
+    // Apply the manual recenter offset, then map to viewport pixels. The offset
+    // corrects GAZE drift only — a fingertip is already an absolute position, so
+    // applying it there would push the cursor off the buttons entirely.
+    const useDrift = !Input || Input.source !== "gesture";
+    const gx = Math.min(Math.max(rawX - (useDrift ? driftX : 0), 0), 1);
+    const gy = Math.min(Math.max(rawY - (useDrift ? driftY : 0), 0), 1);
     const px = gx * innerWidth, py = gy * innerHeight;
     const hit = pickTarget(px, py, target);
 
@@ -206,7 +218,7 @@
 
     let progress = 0;
     const now = performance.now();
-    if (target) {
+    if (target && dwellActive()) {
       progress = Math.min((now - dwellStart) / DWELL_MS, 1);
       if (progress >= 1 && armed && now >= cooldownUntil) {
         const toClick = target;
@@ -226,19 +238,33 @@
     target = null;
   }
 
-  // --- WebSocket -------------------------------------------------------
-  function connect() {
-    setChip("connecting…");
-    let ws; try { ws = new WebSocket(WS_URL); } catch { return setTimeout(connect, 1500); }
-    ws.onopen = () => setChip("connected");
-    ws.onmessage = (ev) => {
-      let m; try { m = JSON.parse(ev.data); } catch { return; }
-      if (m.type !== "gaze") return;
-      faceOk = !!m.ok;
-      if (m.ok) { rawX = m.x; rawY = m.y; }
-    };
-    ws.onclose = () => { faceOk = false; setChip("disconnected"); setTimeout(connect, 1200); };
-    ws.onerror = () => ws.close();
+  // --- Input source ----------------------------------------------------
+  // input-manager.js owns the socket and resolves gaze vs gesture, so this file
+  // only asks "where is the cursor" and "was that a click". Everything below
+  // (targets, magnet, dwell, edge nav) is unchanged by the integration.
+  const Input = window.GameInput;
+
+  function syncInput() {
+    if (!Input) return;
+    faceOk = Input.ok;
+    if (Input.ok) { rawX = Input.x; rawY = Input.y; }
+  }
+
+  // Dwell exists because eyes cannot click. A hand can, so pinch replaces it
+  // rather than running alongside it and double-firing.
+  function dwellActive() { return !Input || Input.mode === "gaze"; }
+
+  function fireTarget() {
+    if (!target || performance.now() < cooldownUntil) return;
+    const toClick = target;
+    clearTarget();                 // drop the highlight before the click navigates
+    toClick.click();
+    armed = false; cooldownUntil = performance.now() + COOLDOWN_MS;
+  }
+
+  if (Input) {
+    Input.onClick(fireTarget);
+    Input.onStatus(() => setChip(Input.connected ? "connected" : "disconnected"));
   }
 
   window.addEventListener("keydown", (e) => {
@@ -249,14 +275,16 @@
     }
     // Recenter: look at the middle of the screen and press C. We zero the offset
     // so "looking at center" maps to center, correcting per-session head drift.
+    // Meaningless for a hand pointer, so it is ignored in gesture mode.
     if (e.key === "c" || e.key === "C") {
-      if (faceOk) { driftX = rawX - 0.5; driftY = rawY - 0.5; }
+      if (faceOk && (!Input || Input.source !== "gesture")) {
+        driftX = rawX - 0.5; driftY = rawY - 0.5;
+      }
     }
     setChip(faceOk || enabled ? "connected" : "connecting…");
   });
   document.addEventListener("fullscreenchange", () => setChip("connected"));
 
-  setInterval(() => setChip(document.hidden ? "connected" : "connected"), 1000); // keep face/fs status fresh
-  connect();
+  setInterval(() => setChip(Input && Input.connected ? "connected" : "disconnected"), 1000);
   requestAnimationFrame(frame);
 })();

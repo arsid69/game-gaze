@@ -1,15 +1,27 @@
-# Gaze-Controlled AI Quest — Setup & Launch Guide
+# Gaze- and Gesture-Controlled AI Quest — Setup & Launch Guide
 
-A browser game you play **with your eyes**. A Python program watches your webcam, works out
-where you are looking on screen, and streams that point to the browser over a local WebSocket.
-You "click" by looking at something and holding still for about a second (dwell-to-click).
+A browser game you play **with your eyes or with your hands**. A Python program watches your
+webcam and streams a cursor position to the browser over a local WebSocket. You "click" either
+by looking at something and holding still for about a second (dwell), or by **pinching** your
+thumb and index finger.
 
-The project is two halves that run at the same time:
+Press **`m`** in the game to switch between the two at any time — no restart, no lost progress.
 
-| Half | What it is | Runs on |
+The project is three parts:
+
+| Part | What it is | Runs on |
 |---|---|---|
-| **Gaze module** (`gaze-detection/`) | Python: webcam → MediaPipe face/iris → L2CS-Net gaze model (ONNX) → per-person calibration → 1€ filter → WebSocket broadcast | `ws://localhost:8765` |
+| **Gaze module** (`gaze-detection/`) | Python: webcam → MediaPipe face/iris → L2CS-Net gaze model (ONNX) → per-person calibration → 1€ filter | `ws://localhost:8765` |
+| **Gesture module** (`gesture-control-module/`) | Python: webcam → MediaPipe Hands → gesture classifier → pointer, pinch, swipe | same socket |
 | **Game** (`game/workingGameTemplate/`) | Plain HTML/JS/Three.js — a 2D quest (`index.html`) and a 3D forest quest (`forest.html`) | `http://localhost:8000` |
+
+Both input modules are served by the **same** `gaze_server.py`, so there is still only one
+server to start. How they were wired together is documented in
+[`docs/INTEGRATION.md`](docs/INTEGRATION.md).
+
+> **Only one input mode runs at a time.** Windows lets just one program own a webcam, and
+> sharing frames between the two pipelines measurably degraded hand tracking. Whichever mode is
+> active gets the camera to itself, so switching takes about 1.5 seconds.
 
 ---
 
@@ -19,7 +31,7 @@ The project is two halves that run at the same time:
 |---|---|
 | **Windows 10 / 11** | The gaze server uses the Media Foundation camera backend and DirectML for GPU inference. |
 | **Python 3.12 – 3.14** | The reference environment is Python 3.14. `python --version` to check. |
-| **Webcam** | A plain 720p laptop camera is enough. No extra sensors. |
+| **Webcam** | A plain 720p laptop camera is enough. No extra sensors. **Check it isn't muted** — many laptops have an `Fn` key or a physical shutter, and a muted camera streams a grey padlock image that neither face nor hand detection can read. |
 | **A Chromium browser** | Chrome or Edge. Fullscreen is required for accuracy (see §5). |
 | **Git** | Two of the Python dependencies install straight from GitHub. |
 | **GPU (optional)** | Any DirectX 12 GPU gives ~15 ms gaze inference via DirectML instead of ~104 ms on CPU. It falls back to CPU automatically. |
@@ -49,6 +61,19 @@ The ones that matter, and why:
 | `scipy` | 1.18.0 | Robust outlier rejection during calibration |
 | `websockets` | 16.1.1 | The `ws://localhost:8765` bridge to the browser |
 
+### Gesture pipeline
+The gesture module needs **no extra packages** — it reuses `mediapipe`, `opencv-python` and
+`numpy`, which the gaze environment already installs. That is why both run from the one venv.
+
+| Library | Purpose |
+|---|---|
+| `mediapipe` | Hand landmarks (21 points per hand) via the Tasks API |
+| `opencv-python` | Webcam capture and colour conversion |
+| `numpy` | Landmark normalisation, the geometric classifier and the k-NN |
+
+> The module supports both the current MediaPipe **Tasks** API and the older `mp.solutions`
+> one, picking automatically. On this project's MediaPipe 0.10.35 it uses Tasks.
+
 ### Supporting
 | Library | Purpose |
 |---|---|
@@ -63,10 +88,13 @@ The ones that matter, and why:
 These three are excluded by `.gitignore` and must be fetched during setup:
 
 ```
-gaze-detection/face_landmarker.task          # ~3.8 MB — MediaPipe face landmarker
-gaze-detection/models/L2CSNet_gaze360.pkl    # ~91 MB — L2CS PyTorch weights
-gaze-detection/models/l2cs_gaze360.onnx      # ~91 MB — exported ONNX model (what runs at runtime)
+gaze-detection/face_landmarker.task              # ~3.8 MB — MediaPipe face landmarker
+gaze-detection/models/L2CSNet_gaze360.pkl        # ~91 MB — L2CS PyTorch weights
+gaze-detection/models/l2cs_gaze360.onnx          # ~91 MB — exported ONNX model (runs at runtime)
+gesture-control-module/models/hand_landmarker.task  # ~7 MB — MediaPipe hand landmarker
 ```
+
+The hand model downloads itself on first use if it is missing, so it usually needs no action.
 
 ---
 
@@ -230,7 +258,12 @@ python -m http.server 8000
 
 ---
 
-## 5. Playing — the two-key ritual (every single time)
+## 5. Playing
+
+The HUD in the corner always shows which input mode is live: `input GAZE` or `input GESTURE`.
+The game starts in gaze mode.
+
+### 5a. Gaze mode — the two-key ritual (every single time)
 
 1. Press **`F`** → fullscreen. **Do not skip this.** Calibration maps your gaze to the whole
    physical screen; a windowed viewport is smaller and pushed down by the browser chrome, so
@@ -244,18 +277,81 @@ python -m http.server 8000
 Then look at an orb or button and **hold still for ~1 second** — a ring charges around the
 cursor and it activates.
 
+### 5b. Gesture mode — press `m`
+
+The HUD shows `SWITCHING…` for about 1.5 seconds while the camera changes hands, then reads
+`input GESTURE`. Watch for `hand: yes` — that means you are being tracked.
+
+1. Hold your hand up, **palm towards the camera**, roughly **40–70 cm** away.
+2. **Point** with your index finger — the cursor follows your fingertip.
+3. **Pinch** thumb and index together to select whatever the cursor is on.
+   There is **no 1-second wait** in this mode: a pinch fires immediately.
+4. **Open your palm** to clear the selection.
+5. **Swipe** left or right to turn the forest and find more orbs.
+
+Press `m` again to go back to gaze. Your progress is kept across switches.
+
+> `C` (recenter) does nothing in gesture mode, and that is deliberate — it corrects *gaze*
+> drift, and your fingertip is already an absolute position.
+
 ### Controls
 
 | Key / action | Effect |
 |---|---|
-| Look + hold ~1 s | Click / collect the highlighted thing |
+| **`m`** | **Switch input mode: gaze ↔ gesture** (~1.5 s camera handover) |
+| Look + hold ~1 s | *(gaze)* Click / collect the highlighted thing |
+| **Pinch** thumb + index | *(gesture)* Click / collect immediately |
+| **Open palm** | *(gesture)* Clear the selection |
+| **Swipe left / right** | *(gesture)* Turn the forest |
 | `F` | Fullscreen on / off (also enables sound) |
-| `C` | Recenter — press whenever the cursor feels shifted |
-| `G` | Gaze control off / on (mouse still works) |
+| `C` | Recenter — gaze mode only |
+| `G` | Input control off / on (mouse still works) |
 | Mouse drag / click | Orbit the camera (3D forest); works as a fallback everywhere |
 | Scroll | Zoom (3D forest) |
-| Look at left/right edge | **3D:** turn the forest to find more orbs · **2D:** pan the Collect field |
-| Look at top/bottom edge | Scroll a long page |
+| Look at left/right edge | *(gaze)* **3D:** turn the forest · **2D:** pan the Collect field |
+| Look at top/bottom edge | *(gaze)* Scroll a long page |
+
+### Gestures the game understands
+
+| Gesture | Meaning |
+|---|---|
+| Point (index finger out) | Move the cursor |
+| Pinch (thumb + index touching) | Select / click |
+| Open palm | Clear selection |
+| Swipe left / right | Turn the view |
+
+Anything else you record yourself (§5c) is reported to the game by name, ready to be bound to
+new actions.
+
+### 5c. Recording your own gestures
+
+The gesture module ships a recorder. New gestures need no code changes — the engine picks them
+up the next time it starts.
+
+**Stop the gaze server first (`Ctrl+C`)**, because the recorder needs the camera:
+
+```powershell
+cd "C:\game integration\gesture-control-module"
+..\gaze-detection\gaze_env\Scripts\python.exe -m gesture_control.recorder record --name thumbs_up --samples 60
+```
+
+Hold the pose, press **Space** to start capturing, and **move your hand around slightly** while
+it records — varied samples generalise far better than 60 identical frames. 30–60 is plenty.
+
+```powershell
+# list everything recorded
+..\gaze-detection\gaze_env\Scripts\python.exe -m gesture_control.recorder list
+
+# live view of what it recognises right now
+..\gaze-detection\gaze_env\Scripts\python.exe -m gesture_control.recorder test
+
+# delete one
+..\gaze-detection\gaze_env\Scripts\python.exe -m gesture_control.recorder delete --name thumbs_up
+```
+
+Recordings are stored in `gestures_dataset.json` **next to the folder you run the command
+from** — so always run it from `gesture-control-module/`, or the server will not find them.
+Restart the gaze server afterwards to load them.
 
 ### The quest — 4 steps
 
@@ -280,6 +376,14 @@ cursor and it activates.
 | Cursor is in the wrong place | You're not fullscreen — press `F`, then look at centre and press `C` |
 | Cursor drifted over time | Look at the middle, press `C` again |
 | Chip bottom-left shows `face: —` | Check the gaze server window is still running and your face is lit and in frame |
+| **Camera shows a grey padlock; nothing is ever detected** | The webcam is muted at hardware level — look for an `Fn` key with a crossed-out camera icon, a physical shutter, or your laptop vendor's privacy utility. Windows privacy settings can read "Allow" and it can still be muted this way. |
+| **`m` does nothing** | The server reports gesture as unavailable — check its startup output for the reason |
+| **HUD stuck on `SWITCHING…`** | The camera handover failed. Check the server window; switching back and forth again usually recovers it |
+| **`hand: —` in gesture mode** | Hand out of frame, too close/far (aim for 40–70 cm), or poorly lit. Palm towards the camera |
+| **Pinch selects nothing** | Aim first — the cursor must be on the target before you pinch. Pinch fully, thumb touching index |
+| **Pinch fires by accident** | Lower `gestures.pinch_close` in `gesture-control-module/gesture_control/config.py` |
+| **Cursor jitters in gesture mode** | Raise `pointer.min_cutoff` in the same file |
+| **Custom gesture never recognised** | Make sure you ran the recorder from `gesture-control-module/`, then restarted the server |
 | `socket: disconnected` | Terminal 1 died or was Ctrl+C'd — restart it; the browser reconnects automatically |
 | Really shaky or laggy | Close every other game tab; only one should be open |
 | Gaze feels sluggish generally | Check the gaze server's first line: `[gaze_pipeline] ONNX running on: DmlExecutionProvider`. If it says `CPUExecutionProvider`, install `onnxruntime-directml` |
@@ -315,6 +419,18 @@ netstat -ano | findstr LISTENING | findstr "8000 8765"
 | `ONE_EURO_MIN_CUTOFF` | 0.7 | ↓ = steadier when your gaze is still |
 | `ONE_EURO_BETA` | 0.6 | ↑ = snappier on fast eye movements |
 
+**`gesture-control-module/gesture_control/config.py`** — every gesture tunable
+
+| Constant | Default | Meaning |
+|---|---|---|
+| `gestures.pinch_close` | 0.34 | How tight a pinch must be to register |
+| `gestures.pinch_open` | 0.48 | When it lets go again (the gap stops flickering) |
+| `gestures.stable_frames` | 3 | Frames a gesture must hold before it counts. ↑ steadier, slower |
+| `pointer.min_cutoff` | 1.2 | ↑ = steadier cursor when your hand is still |
+| `pointer.beta` | 0.02 | ↑ = snappier on fast hand movement |
+| `primary_hand` | `"any"` | `"Right"` / `"Left"` to ignore the other hand |
+| `tracker.max_hands` | 2 | Hands tracked at once |
+
 **`game/workingGameTemplate/gaze-client.js`**
 
 | Constant | Default | Meaning |
@@ -338,12 +454,22 @@ game integration/
 │   ├── quest.js             # Quest wrapper: Collect → Clean → Train → Apply
 │   ├── index.html           # 2D quest (earlier version)
 │   ├── main.js              # 2D game logic
-│   ├── gaze-client.js       # Gaze overlay for the 2D game
+│   ├── input-manager.js     # Input layer: the only WebSocket client; gaze/gesture + [m]
+│   ├── gaze-client.js       # Input overlay for the 2D game
 │   ├── styles.css
 │   ├── models/              # .glb assets for the 3D scene
 │   └── vendor/three/        # Vendored Three.js — no npm install needed
+├── gesture-control-module/          # The gesture module (used as-is, unmodified)
+│   ├── gesture_control/
+│   │   ├── engine.py        # Interaction state machine, emits gesture events
+│   │   ├── tracker.py       # MediaPipe Hands backends
+│   │   ├── gestures.py      # Rule + k-NN classifiers
+│   │   ├── recorder.py      # CLI for recording custom gestures
+│   │   └── config.py        # Every gesture tunable
+│   └── models/hand_landmarker.task
 ├── gaze-detection/
-│   ├── gaze_server.py       # WebSocket bridge — run this
+│   ├── gaze_server.py       # WebSocket bridge for BOTH inputs — run this
+│   ├── gesture_bridge.py    # Adapter joining the gesture module to the server
 │   ├── gaze_pipeline.py     # Face detect + crop + ONNX gaze inference
 │   ├── calibration_utils.py # Fit / save / load / apply the calibration polynomial
 │   ├── positioning_gate.py  # Distance + centering constraints
@@ -360,6 +486,11 @@ game integration/
 
 ## Further reading
 
+- [`docs/INTEGRATION.md`](docs/INTEGRATION.md) — how the gesture module was joined to the gaze
+  game: architecture, input flow, every file changed and why, and the measurements behind the
+  exclusive-camera decision
+- [`gesture-control-module/README.md`](gesture-control-module/README.md) — the gesture module's
+  own documentation: event API, gesture recording, tuning
 - [`GAZE_SYSTEM_DOCS.md`](GAZE_SYSTEM_DOCS.md) — architecture, design decisions, performance figures
 - [`gaze-detection/documents/TECHNICAL_DOCUMENTATION.md`](gaze-detection/documents/TECHNICAL_DOCUMENTATION.md) — algorithms and math
 - [`gaze-detection/documents/ROADMAP.md`](gaze-detection/documents/ROADMAP.md) — path to higher accuracy

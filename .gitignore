@@ -1,5 +1,8 @@
-# Python virtual environment (recreate with: python -m venv gaze_env && pip install -r requirements.txt)
+# Python virtual environments (recreate with: python -m venv gaze_env && pip install -r requirements.txt)
 gaze-detection/gaze_env/
+# 333 MB. Python's venv self-ignores, but do not rely on that surviving a move.
+# The gesture module runs from gaze_env anyway — it needs no separate install.
+gesture-control-module/.venv/
 
 # Python caches
 __pycache__/
@@ -22,6 +25,9 @@ CLAUDE.md
 gaze-detection/models/l2cs_gaze360.onnx
 gaze-detection/models/L2CSNet_gaze360.pkl
 gaze-detection/face_landmarker.task
+# The hand model (~7 MB) downloads itself on first run — same convention as the
+# face landmarker above, so a clone stays small.
+gesture-control-module/models/hand_landmarker.task
 
 # Per-person calibration — valid only for the eyes, laptop and seating position
 # that recorded it. Each player generates their own with milestone4_calibration.py

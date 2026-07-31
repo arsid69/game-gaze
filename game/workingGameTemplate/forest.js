@@ -54,7 +54,7 @@ addEventListener("pointermove", (e) => { if (camDragging) { camX -= (e.clientX -
 // Gaze at the left/right edge slides the view to find orbs (unless one is targeted).
 function updateCamera(dt) {
   if (gazeOn && faceOk && !hovered) {
-    const gx = clamp(rawX - driftX, 0, 1);
+    const gx = clamp(rawX - drift()[0], 0, 1);   // gesture pointer takes no gaze offset
     if (gx < CAM_EDGE) camX -= CAM_PAN_SPEED * dt * ((CAM_EDGE - gx) / CAM_EDGE);
     else if (gx > 1 - CAM_EDGE) camX += CAM_PAN_SPEED * dt * ((gx - (1 - CAM_EDGE)) / CAM_EDGE);
   }
@@ -429,8 +429,7 @@ function updateDataNodes(dt) {
 /* ============================================================
    GAZE CONTROL IN 3D — raycast + aim-assist + dwell
    ============================================================ */
-const GAZE_WS = "ws://localhost:8765";
-const DWELL_MS = 1000;
+const DWELL_MS = 1000;   // socket URL now lives in input-manager.js, the only WS client
 const ASSIST_RADIUS = 120;   // px — forgiving snap to the nearest orb on screen
 const HYSTERESIS = 55;       // px — sticky current target
 const MAGNET = 0.5;          // cursor pull onto the locked orb
@@ -466,32 +465,68 @@ document.body.appendChild(centerMark);
 
 const hud = document.getElementById("hud");
 function chip(status) {
-  hud.innerHTML = `DATA FOREST · gaze <b>${gazeOn ? "ON" : "OFF"}</b>  socket:<b>${status}</b>  `
-    + `face:<b>${faceOk ? "yes" : "—"}</b>  collected:<b>${collected}/${DATA.length}</b>\n`
-    + `[f] fullscreen   [c] recenter   [g] toggle   ·   look LEFT / RIGHT to turn &amp; find orbs`;
+  const gi = window.GameInput;
+  const mode = gi ? gi.modeLabel() : "GAZE";
+  // In gesture modes the useful signal is "can it see my hand", not "my face".
+  const tracked = gi && gi.mode !== "gaze"
+    ? `hand:<b>${gi.handOk ? "yes" : "—"}</b>`
+    : `face:<b>${faceOk ? "yes" : "—"}</b>`;
+  const activate = gi && gi.mode !== "gaze" ? "pinch to select" : "hold gaze to select";
+  hud.innerHTML = `DATA FOREST · input <b>${mode}</b>  control <b>${gazeOn ? "ON" : "OFF"}</b>  `
+    + `socket:<b>${status}</b>  ${tracked}  collected:<b>${collected}/${DATA.length}</b>\n`
+    + `[m] input mode   [f] fullscreen   [c] recenter   [g] toggle   ·   ${activate}`;
 }
 
-let gzWs = null;
-function gzConnect() {
-  chip("connecting…");
-  try { gzWs = new WebSocket(GAZE_WS); } catch { return setTimeout(gzConnect, 1500); }
-  gzWs.onopen = () => chip("connected");
-  gzWs.onmessage = (ev) => {
-    let m; try { m = JSON.parse(ev.data); } catch { return; }
-    if (m.type !== "gaze") return;
-    faceOk = !!m.ok;
-    if (m.ok) { rawX = m.x; rawY = m.y; }
-  };
-  gzWs.onclose = () => { faceOk = false; chip("disconnected"); setTimeout(gzConnect, 1200); };
-  gzWs.onerror = () => gzWs.close();
+/* Input comes from input-manager.js, which owns the only socket and hides
+   whether the cursor is being driven by eyes or by a hand. Pulling the values
+   into the existing rawX / rawY / faceOk variables means every calculation
+   below this point is untouched by the gesture integration. */
+const Input = window.GameInput;
+
+function syncInput() {
+  if (!Input) return;
+  faceOk = Input.ok;                       // "is the cursor live", whatever the device
+  if (Input.ok) { rawX = Input.x; rawY = Input.y; }
 }
-gzConnect();
+
+/* Dwell is a gaze affordance: with no way to click, you hold still instead.
+   A hand can click, so pinch replaces dwell in the modes that have one —
+   otherwise a pinch and the dwell timer would both fire on the same orb. */
+function dwellActive() { return !Input || Input.mode === "gaze"; }
+
+/* Fire whatever is under the cursor right now. Shared by dwell and pinch so
+   activation lives in one place and both routes behave identically. */
+function fireTarget() {
+  if (domTargets.length) {                 // win-screen / card buttons take priority
+    if (domHovered) {
+      domHovered.click();
+      domArmed = false; domFireAt = performance.now();
+    }
+    return;
+  }
+  if (hovered && collectEnabled) { selectObject(hovered); armed = false; }
+}
+
+if (Input) {
+  Input.onClick(fireTarget);               // pinch
+  Input.onStatus(() => chip(Input.connected ? "connected" : "disconnected"));
+  // A swipe turns the forest, so orbs behind you are reachable without
+  // having to hold your gaze at the screen edge.
+  Input.onSwipe(({ direction }) => {
+    if (direction === "left") camX -= 6;
+    else if (direction === "right") camX += 6;
+  });
+}
 
 addEventListener("keydown", (e) => {
   ensureAudio();
   if (e.key === "g" || e.key === "G") { gazeOn = !gazeOn; if (!gazeOn && hovered) hovered = null; chip("connected"); }
   if (e.key === "f" || e.key === "F") { document.fullscreenElement ? document.exitFullscreen?.() : document.documentElement.requestFullscreen?.(); }
-  if (e.key === "c" || e.key === "C") { recentering = true; recenterAt = performance.now() + 1300; centerMark.style.opacity = "1"; }
+  // Recenter only means something for gaze. In gesture mode it would capture
+  // wherever your hand happened to be as a permanent offset.
+  if ((e.key === "c" || e.key === "C") && !(Input && Input.source === "gesture")) {
+    recentering = true; recenterAt = performance.now() + 1300; centerMark.style.opacity = "1";
+  }
 });
 
 function findSelectable(o) { while (o) { if (o.userData && o.userData.selectable) return o; o = o.parent; } return null; }
@@ -527,14 +562,27 @@ function update2DGaze(gpx, gpy) {
   // keep ↔ discard just by continuing to look at it (charge ring recharges).
   else if (domHovered && !domArmed && now - domFireAt >= REFIRE_PAUSE) { domArmed = true; domDwellStart = now; }
   let progress = 0;
-  if (domHovered && domArmed) {
+  if (domHovered && domArmed && dwellActive()) {
     progress = Math.min((now - domDwellStart) / DWELL_MS, 1);
     if (progress >= 1) { domHovered.click(); domArmed = false; domFireAt = now; }
   }
   gzCharge.setAttribute("stroke-dashoffset", C2 * (1 - progress));
 }
 
+/* The recenter offset corrects GAZE drift — where your eyes land versus where
+   you think you are looking. A hand pointer has no such error: the fingertip is
+   already an absolute position. Subtracting the gaze offset from it just shoves
+   the cursor sideways, which put menu buttons out of reach entirely (their hit
+   radius is 60px, and a 0.1 offset is 128px at 1280 wide).
+   Hybrid aims with the eyes, so it keeps the correction. */
+function drift() {
+  return (Input && Input.source === "gesture") ? [0, 0] : [driftX, driftY];
+}
+
 function updateGaze() {
+  syncInput();                 // pull the active device's cursor for this frame
+  const [dX, dY] = drift();
+
   // Guided recenter: hold the target ~1.3s, then capture the offset.
   if (recentering) {
     if (faceOk && performance.now() >= recenterAt) {
@@ -542,7 +590,7 @@ function updateGaze() {
       recentering = false; centerMark.style.opacity = "0";
     } else {
       if (faceOk) {
-        const gx0 = clamp(rawX - driftX, 0, 1), gy0 = clamp(rawY - driftY, 0, 1);
+        const gx0 = clamp(rawX - dX, 0, 1), gy0 = clamp(rawY - dY, 0, 1);
         gzCur.style.transform = `translate(${gx0 * innerWidth}px, ${gy0 * innerHeight}px)`;
         gzCur.style.opacity = "1";
       }
@@ -559,7 +607,7 @@ function updateGaze() {
     return;
   }
 
-  const gx = clamp(rawX - driftX, 0, 1), gy = clamp(rawY - driftY, 0, 1);
+  const gx = clamp(rawX - dX, 0, 1), gy = clamp(rawY - dY, 0, 1);
   const gpx = gx * innerWidth, gpy = gy * innerHeight;
 
   // Win-screen buttons up? Do 2D gaze selection on them instead of the 3D scene.
@@ -591,10 +639,12 @@ function updateGaze() {
 
   if (root !== hovered) { hovered = root; dwellStart = performance.now(); armed = true; }
   let progress = 0;
-  if (hovered) {
+  if (hovered && dwellActive()) {
     progress = Math.min((performance.now() - dwellStart) / DWELL_MS, 1);
     if (progress >= 1 && armed && collectEnabled) { selectObject(hovered); armed = false; }
   }
+  // With dwell off the ring stays empty rather than frozen full, so it never
+  // looks like a charge that failed to fire.
   gzCharge.setAttribute("stroke-dashoffset", C2 * (1 - progress));
 }
 
